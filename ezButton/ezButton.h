@@ -52,7 +52,7 @@ class ezButton
 		int lastSteadyState;      // the last steady state from the input pin
 		int lastFlickerableState; // the last flickerable state from the input pin
 		int currentState;         // the current reading from the input pin
-		int lightState;
+		int lightState;           // the current state of the light
 
 		unsigned long lastDebounceTime; // the last time the output pin was toggled
 

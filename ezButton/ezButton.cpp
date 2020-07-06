@@ -34,19 +34,19 @@
 ezButton::ezButton(int in, int out, unsigned long time) {
 	inPin = in;
 	outPin = out;
-	debounceTime = 0;
+	debounceTime = time;
+	lastDebounceTime = 0;
 	count = 0;
 	countMode = NOT_COUNT;
+	lightState = LOW;
 
 	pinMode(inPin, INPUT_PULLUP);
 	pinMode(outPin, OUTPUT);
+	digitalWrite(inPin, lightState);
 
 	previousSteadyState = digitalRead(inPin);
 	lastSteadyState = digitalRead(inPin);
 	lastFlickerableState = digitalRead(inPin);
-
-	lastDebounceTime = 0;
-	debounceTime = time;
 }
 
 void ezButton::setDebounceTime(unsigned long time) {
