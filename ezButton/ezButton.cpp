@@ -61,6 +61,10 @@ int ezButton::getStateRaw(void) {
 	return digitalRead(inPin);
 }
 
+int ezButton::getLightState(void) {
+	return lightState;
+}
+
 bool ezButton::isPressed(void) {
 	if(previousSteadyState == HIGH && lastSteadyState == LOW)
 		return true;

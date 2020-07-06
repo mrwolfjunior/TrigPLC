@@ -61,6 +61,7 @@ class ezButton
 		void setDebounceTime(unsigned long time);
 		int getState(void);
 		int getStateRaw(void);
+		int getLightState(void);
 		int triggerLight(void);
 		bool isPressed(void);
 		bool isReleased(void);
