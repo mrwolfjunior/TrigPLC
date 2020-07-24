@@ -28,7 +28,7 @@ byte relays[] = {CONTROLLINO_R0, CONTROLLINO_R1, CONTROLLINO_R2, CONTROLLINO_R3,
 #include <ezButton.h>     // Modded - Based on ver 1.0.3
 #define DEBOUNCE_TIME 50  // ms
 
-ezButton IOMap[][2] = {
+ezButton IOMap[] = {
   ezButton(CONTROLLINO_A0, CONTROLLINO_R0, DEBOUNCE_TIME), // Room1
   ezButton(CONTROLLINO_A1, CONTROLLINO_R1, DEBOUNCE_TIME)  // Room2
 };
@@ -38,11 +38,12 @@ void setup() {
 }
 
 void loop() {
-  for(auto &item : instances) {
+
+  for(auto &item : IOMap) {
     item.loop();
   }
-
-  for(auto &item : instances) {
+  
+  for(auto &item : IOMap) {
     item.triggerLight();
   }
 }
