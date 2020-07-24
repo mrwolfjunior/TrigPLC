@@ -80,7 +80,7 @@ bool ezButton::isReleased(void) {
 }
 
 int ezButton::triggerLight(void) {
-	if(previousSteadyState == HIGH && lastSteadyState == LOW) {
+	if(previousSteadyState == LOW && lastSteadyState == HIGH) {
 		lightState =! lightState;
 		digitalWrite(inPin, lightState);
 		return lightState;
