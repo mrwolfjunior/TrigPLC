@@ -1,5 +1,5 @@
-#ifndef ezButton_h
-#define ezButton_h
+#ifndef Button_h
+#define Button_h
 
 #include <Arduino.h>
 
