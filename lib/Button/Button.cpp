@@ -14,8 +14,8 @@ int Button::getOutPin(void) {
     return outPin;
 };
 
-int Button::getCurrentState(void) {
-    return currentState;
+int Button::getLightState(void) {
+    return lightState;
 }
 
 bool Button::isPressed(void) {

@@ -19,7 +19,7 @@ class Button
                 Button(int in, int out);
                 int getInPin(void);
                 int getOutPin(void);
-                int getCurrentState(void);
+                int getLightState(void);
                 bool isReleased(void);
                 bool isPressed(void);
                 void triggerLight(void);
