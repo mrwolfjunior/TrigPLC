@@ -23,27 +23,32 @@ byte relays[] = {CONTROLLINO_R0, CONTROLLINO_R1, CONTROLLINO_R2, CONTROLLINO_R3,
                  CONTROLLINO_R10, CONTROLLINO_R11, CONTROLLINO_R12, CONTROLLINO_R13, CONTROLLINO_R14,
                  CONTROLLINO_R15};
 */
+
 #include <Arduino.h>
 #include <Controllino.h>
-#include <ezButton.h>     // Modded - Based on ver 1.0.3
+#include <Button.h>
+
 #define DEBOUNCE_TIME 50  // ms
 
-ezButton IOMap[] = {
-  ezButton(CONTROLLINO_A0, CONTROLLINO_R0, DEBOUNCE_TIME), // Room1
-  ezButton(CONTROLLINO_A1, CONTROLLINO_R1, DEBOUNCE_TIME)  // Room2
+Button buttons[] = {
+  Button(CONTROLLINO_A0, CONTROLLINO_R0),
+  Button(CONTROLLINO_A1, CONTROLLINO_R1)
 };
 
 void setup() {
-  Serial.begin(57600);   // initialize serial
+  Serial.begin(57600);      // initialize serial
+
+  for(auto &item : buttons) {
+    item.setup(DEBOUNCE_TIME);      // initialize in/out pin
+  }
 }
 
 void loop() {
-
-  for(auto &item : IOMap) {
+  for(auto &item : buttons) {
     item.loop();
   }
-  
-  for(auto &item : IOMap) {
+
+  for(auto &item : buttons) {
     item.triggerLight();
   }
 }
