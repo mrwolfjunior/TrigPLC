@@ -30,8 +30,21 @@
 #define DEBOUNCE_TIME 50  // ms
 
 Button buttons[] = {
-  Button(CONTROLLINO_A0, CONTROLLINO_R0),
-  Button(CONTROLLINO_A1, CONTROLLINO_R1)
+  Button(CONTROLLINO_R0, CONTROLLINO_A5), // Ballatoio
+  Button(CONTROLLINO_R1, CONTROLLINO_A14), // Ext nord
+  Button(CONTROLLINO_R2, CONTROLLINO_A13), // Ext cucina
+  Button(CONTROLLINO_R3, CONTROLLINO_A4), // Stanza 2 -- Ema
+  Button(CONTROLLINO_R4, CONTROLLINO_A12), // Cucina
+  Button(CONTROLLINO_R5, CONTROLLINO_A8), // Stanza 3 -- Gio
+  Button(CONTROLLINO_R6, CONTROLLINO_A2), // Corridoio
+  Button(CONTROLLINO_R7, CONTROLLINO_A9), // Esterno 3
+  Button(CONTROLLINO_R8, CONTROLLINO_A6), // Lavanderia
+  Button(CONTROLLINO_R9, CONTROLLINO_A7), // Bagno piccolo
+  Button(CONTROLLINO_R10, CONTROLLINO_A11), // Sala
+  Button(CONTROLLINO_R11, CONTROLLINO_A3), // Esterno 2
+  Button(CONTROLLINO_R12, CONTROLLINO_A1), // Esterno 1
+  Button(CONTROLLINO_R13, CONTROLLINO_A10), // Bagno
+  Button(CONTROLLINO_R14, CONTROLLINO_A0) // Stanza 1
 };
 
 void setup() {
