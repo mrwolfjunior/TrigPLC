@@ -47,6 +47,19 @@ Button buttons[] = {
   Button(CONTROLLINO_A0, CONTROLLINO_R14) // Stanza 1
 };
 
+/*
+// Luci esterne su A3
+
+Button buttons[] = {
+  Button(CONTROLLINO_A0, CONTROLLINO_R0), // Cucina
+  Button(CONTROLLINO_A1, CONTROLLINO_R1), // Locale tecnico - Ipotizzato ingresso
+  Button(CONTROLLINO_A2, CONTROLLINO_R2), // Salone
+  Button(CONTROLLINO_A4, CONTROLLINO_R3), // Garage
+  Button(CONTROLLINO_A6, CONTROLLINO_R4), // Est. Porta
+  Button(CONTROLLINO_A5, CONTROLLINO_R5) // Gradini
+}
+*/
+
 void setup() {
   Serial.begin(57600);
 
