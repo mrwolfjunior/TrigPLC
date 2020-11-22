@@ -1,5 +1,5 @@
 #include <Button.h>
-#define PRESSTIME 750
+#define PRESSTIME 500
 
 Button::Button(int in, int out){
     inPin = in;
