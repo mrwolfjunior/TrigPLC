@@ -57,7 +57,7 @@ Button buttons[] = {
   Button(CONTROLLINO_A4, CONTROLLINO_R3), // Garage
   Button(CONTROLLINO_A6, CONTROLLINO_R4), // Est. Porta
   Button(CONTROLLINO_A5, CONTROLLINO_R5) // Gradini
-}
+};
 */
 
 void setup() {
