@@ -27,7 +27,7 @@
 #include <Controllino.h>
 #include <Button.h>
 
-#define DEBOUNCE_TIME 50  // ms
+#define DEBOUNCE_TIME 10  // ms
 
 Button buttons[] = {
   Button(CONTROLLINO_A5, CONTROLLINO_R0), // Ballatoio
@@ -37,11 +37,11 @@ Button buttons[] = {
   Button(CONTROLLINO_A12, CONTROLLINO_R4, CONTROLLINO_R10), // Cucina
   Button(CONTROLLINO_A8, CONTROLLINO_R5), // Stanza 3 -- Gio
   Button(CONTROLLINO_A2, CONTROLLINO_R6), // Corridoio
-  Button(CONTROLLINO_A9, CONTROLLINO_R7), // Esterno 3
+  Button(CONTROLLINO_A9, CONTROLLINO_R5), // Esterno 3 -- Gio --> default R7
   Button(CONTROLLINO_A6, CONTROLLINO_R8), // Lavanderia
   Button(CONTROLLINO_A7, CONTROLLINO_R9), // Bagno piccolo
   Button(CONTROLLINO_A11, CONTROLLINO_R10, CONTROLLINO_R4), // Sala
-  Button(CONTROLLINO_A3, CONTROLLINO_R11), // Esterno 2
+  Button(CONTROLLINO_A3, CONTROLLINO_R3), // Esterno 2 - Ema --> default R11
   Button(CONTROLLINO_A1, CONTROLLINO_R12), // Esterno 1
   Button(CONTROLLINO_A10, CONTROLLINO_R13), // Bagno
   Button(CONTROLLINO_A0, CONTROLLINO_R14) // Stanza 1
