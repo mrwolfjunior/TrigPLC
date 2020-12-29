@@ -10,7 +10,7 @@ class Button
                 int inPin;
                 int outPin;
                 int outPin2 = NOTUSED;
-                unsigned long debounceTime;
+                unsigned long debounceTime = 0;
                 unsigned long lastDebounceTime; // the last time the output pin was toggled
                 int lightCount;
                 unsigned long lastPress;
