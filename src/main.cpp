@@ -28,7 +28,7 @@
 #include <Arduino_FreeRTOS.h>
 #include <Button.h>
 
-#define DEBOUNCE_TIME 10  // ms
+#define DEBOUNCE_TIME 50  // ms
 #define FOREVER 1
 
 Button buttons[] = {
