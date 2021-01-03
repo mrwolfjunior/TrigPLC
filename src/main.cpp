@@ -65,7 +65,7 @@ Button buttons[] = {
 void TaskLight( void *pvParameters );
 
 void setup() {
-  Serial.begin(57600);
+  Serial.begin(9600);
 
   xTaskCreate(TaskLight,"TaskLight",128,NULL,1,NULL);
   vTaskStartScheduler();
@@ -82,6 +82,7 @@ void TaskLight( void *pvParameters ) {
 
   while (FOREVER)
   {
+    
     for(auto &item : buttons) {
       item.loop();
     }
