@@ -3,21 +3,25 @@
 #define BLOCKPRESS 1000 // 1 sec of block
 #define PRECISION 0.85
 
+void Button::resetCounter(void) {
+	countLow = 0;
+	countHigh = 0;
+	return;
+}
+
 Button::Button(int in, int out) {
 	inPin = in;
     outPin = out;
     lightState = LOW;
 	lastPressTime = millis();
 	eStartTime = lastPressTime;
-	// inizialize with 0 the array
-	counter = new int[2]();
+	resetCounter();
 }
 
 void Button::setup(void) {
 	// init hardware
     pinMode(inPin, INPUT);
     pinMode(outPin, OUTPUT);
-	digitalWrite(outPin, lightState); // Make sure light is off
 
     // init private variables
     currentState = digitalRead(inPin);
@@ -26,23 +30,10 @@ void Button::setup(void) {
     return;
 }
 
-void resetCounter(int * counter) {
-	counter[0] = 0;
-	counter[1] = 0;
-	return;
-}
-
 void Button::loop(void) {
 	currentState = digitalRead(inPin);
-
-	if(isEvaluating == false) {
-		if(lastState == LOW && currentState == HIGH && (millis() - lastPressTime > BLOCKPRESS)) { // if the button is pressed and is not evaluating start the evaluation time
-			isEvaluating = true;
-			eStartTime = millis();
-			resetCounter(counter);
-		}
-	}
-	else { // is evaluating
+	
+	if(isEvaluating) { // is evaluating
 		
 		if(millis() - eStartTime > ETIME) { // finished evaluation time	
 			isEvaluating = false;
@@ -50,7 +41,7 @@ void Button::loop(void) {
 			lastPressTime = millis();
 			
 			// check percentage of success
-			if((counter[1] / (counter[1] + counter[0])) > PRECISION) {
+			if(countHigh / (countHigh + countLow) > PRECISION) {
 				lightState =! lightState;
 				digitalWrite(outPin, lightState);
 			}
@@ -58,10 +49,15 @@ void Button::loop(void) {
 		else {
 			// is evaluating, update the counter
 			if(currentState == LOW) 
-				++counter[0];
+				++countLow;
 			else
-				++counter[1];
+				++countHigh;
 		}
+	}
+	else if(lastState == LOW && currentState == HIGH && (millis() - lastPressTime > BLOCKPRESS)) { // if the button is pressed and is not evaluating start the evaluation time
+		isEvaluating = true;
+		eStartTime = millis();
+		resetCounter();
 	}
 
 	lastState = currentState;

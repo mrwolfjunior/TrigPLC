@@ -12,13 +12,15 @@ class Button
                 int lightState;
                 int currentState;
                 int lastState;
-                int * counter;
+                int countLow;
+                int countHigh;
                 boolean isEvaluating = false;
                 // evaluation starting time
                 unsigned long eStartTime;
                 unsigned long lastPressTime;
         public:
                 Button(int in, int out);
+                void resetCounter(void);
                 void setup(void);
                 void loop(void);
 };
