@@ -37,7 +37,7 @@ void Button::loop(void) {
 
 	if(isEvaluating == false) {
 		if(lastState == LOW && currentState == HIGH && (millis() - lastPressTime > BLOCKPRESS)) { // if the button is pressed and is not evaluating start the evaluation time
-			isEvaluating == true;
+			isEvaluating = true;
 			eStartTime = millis();
 			resetCounter(counter);
 		}
@@ -45,13 +45,13 @@ void Button::loop(void) {
 	else { // is evaluating
 		
 		if(millis() - eStartTime > ETIME) { // finished evaluation time	
-			isEvaluating == false;
+			isEvaluating = false;
 			// update last press
 			lastPressTime = millis();
 			
 			// check percentage of success
 			if((counter[1] / (counter[1] + counter[0])) > PRECISION) {
-				lightState != lightState;
+				lightState = !lightState;
 				digitalWrite(outPin, lightState);
 			}
 		}
