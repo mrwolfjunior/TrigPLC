@@ -51,7 +51,7 @@ void Button::loop(void) {
 			
 			// check percentage of success
 			if((counter[1] / (counter[1] + counter[0])) > PRECISION) {
-				lightState = !lightState;
+				lightState =! lightState;
 				digitalWrite(outPin, lightState);
 			}
 		}
