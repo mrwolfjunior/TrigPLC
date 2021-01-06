@@ -1,130 +1,69 @@
 #include <Button.h>
-#define PRESSTIME 500
+#define ETIME 50
+#define BLOCKPRESS 1000 // 1 sec of block
+#define PRECISION 0.85
 
-Button::Button(int in, int out){
-    inPin = in;
+Button::Button(int in, int out) {
+	inPin = in;
     outPin = out;
     lightState = LOW;
-    lastDebounceTime = 0;
-};
-
-// Constructor delegation
-Button::Button(int in, int out1, int out2):Button(in, out1) {
-	outPin2 = out2;
-	lightCount = 0;
-	lastPress = 0;
-}
-
-int Button::getInPin(void) {
-    return inPin;
-};
-int Button::getOutPin(void) {
-    return outPin;
-};
-
-int Button::getLightState(void) {
-    return lightState;
-}
-
-bool Button::isPressed(void) {
-	if(previousSteadyState == LOW && lastSteadyState == HIGH)
-		return true;
-	else
-		return false;
-}
-
-bool Button::isReleased(void) {
-	if(previousSteadyState == HIGH && lastSteadyState == LOW)
-		return true;
-	else
-		return false;
-}
-
-void Button::triggerLight(void) {
-	if (outPin2 == NOTUSED) {
-		if(previousSteadyState == HIGH && lastSteadyState == LOW) {
-			lightState =! lightState;
-			digitalWrite(outPin, lightState);
-		}
-	}
-	else {
-		if(previousSteadyState == HIGH && lastSteadyState == LOW) {
-			if(lightCount == 0)
-				lastPress = millis();
-			lightCount++;
-		}
-
-		if(millis() - lastPress > PRESSTIME && lightCount >= 1) { // wait for evaluation time
-				if(lightCount == 1) { // single press
-					lightState =! lightState;
-					digitalWrite(outPin, lightState);
-				}
-				else { // double press
-					if(lightState == HIGH) { // If primary light is on
-						if(digitalRead(outPin2) == HIGH ) { // Both on, power off
-							lightState =! lightState;
-							digitalWrite(outPin, lightState);
-							digitalWrite(outPin2, LOW);
-						}
-						else { // Power on only second, first already on
-							digitalWrite(outPin2, HIGH);
-						}
-					}
-					else { // If primary is off
-						if(digitalRead(outPin2) == LOW) { // Both off, power on
-							lightState =! lightState;
-							digitalWrite(outPin, lightState);
-							digitalWrite(outPin2, HIGH);
-						}
-						else { // Power off only second, first already off
-							digitalWrite(outPin2, LOW);
-						}
-					}
-				}
-				lightCount = 0;
-			}
-	}
-
-    return;
+	lastPressTime = millis();
+	eStartTime = lastPressTime;
+	// inizialize with 0 the array
+	counter = new int[2]();
 }
 
 void Button::setup(void) {
+	// init hardware
     pinMode(inPin, INPUT);
     pinMode(outPin, OUTPUT);
-	if (outPin2 != NOTUSED) {
-		pinMode(outPin2, OUTPUT);
-		// Not necessary to have the digitalWrite
-	}
+	digitalWrite(outPin, lightState); // Make sure light is off
 
-    // Init all variables
+    // init private variables
     currentState = digitalRead(inPin);
-    previousSteadyState = digitalRead(inPin);
-	lastSteadyState = digitalRead(inPin);
-	lastFlickerableState = digitalRead(inPin);
-
-    digitalWrite(outPin, lightState);       // Make sure light is off
-
+    lastState = currentState;
+    
     return;
 }
 
-void Button::setup(int time) {
-	this->setup();
-    debounceTime = time;
-    return;
+void resetCounter(int * counter) {
+	counter[0] = 0;
+	counter[1] = 0;
+	return;
 }
 
-int Button::loop(void) {
-
+void Button::loop(void) {
 	currentState = digitalRead(inPin);
 
-	if (currentState != lastFlickerableState) {
-
-		lastDebounceTime = millis();
-		lastFlickerableState = currentState;
+	if(isEvaluating == false) {
+		if(lastState == LOW && currentState == HIGH && (millis() - lastPressTime > BLOCKPRESS)) { // if the button is pressed and is not evaluating start the evaluation time
+			isEvaluating == true;
+			eStartTime = millis();
+			resetCounter(counter);
+		}
+	}
+	else { // is evaluating
+		
+		if(millis() - eStartTime > ETIME) { // finished evaluation time	
+			isEvaluating == false;
+			// update last press
+			lastPressTime = millis();
+			
+			// check percentage of success
+			if((counter[1] / (counter[1] + counter[0])) > PRECISION) {
+				lightState != lightState;
+				digitalWrite(outPin, lightState);
+			}
+		}
+		else {
+			// is evaluating, update the counter
+			if(currentState == LOW) 
+				++counter[0];
+			else
+				++counter[1];
+		}
 	}
 
-	if ((millis() - lastDebounceTime) >= debounceTime) {
-		previousSteadyState = lastSteadyState;
-		lastSteadyState = currentState;
-	}
+	lastState = currentState;
+	return;
 }
