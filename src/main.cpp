@@ -25,10 +25,7 @@
 
 #include <Arduino.h>
 #include <Controllino.h>
-#include <Arduino_FreeRTOS.h>
 #include <Button.h>
-
-#define FOREVER 1
 
 Button buttons[] = {
   Button(CONTROLLINO_A5, CONTROLLINO_R0), // Ballatoio
@@ -61,29 +58,17 @@ Button buttons[] = {
 };
 */
 
-void TaskLight( void *pvParameters );
-
 void setup() {
   Serial.begin(9600);
 
-  xTaskCreate(TaskLight,"TaskLight",128,NULL,1,NULL);
-  vTaskStartScheduler();
-}
-
-void loop() {
-}
-
-void TaskLight( void *pvParameters ) {
   for(auto &item : buttons) {
     // initialize in/out pin
     item.setup();
   }
+}
 
-  while (FOREVER)
-  {
-    for(auto &item : buttons) {
-      item.loop();
-    }
+void loop() {
+  for(auto &item : buttons) {
+    item.loop();
   }
-  
 }
