@@ -1,7 +1,8 @@
 #include <Button.h>
+#include <Logger.h>
 #define ETIME 50
-#define BLOCKPRESS 1000 // 1 sec of block
-#define PRECISION 0.85
+#define BLOCKPRESS 500 // 0.5 sec of block
+#define PRECISION 0.70
 
 void Button::resetCounter(void) {
 	countLow = 0;
@@ -26,8 +27,11 @@ void Button::setup(void) {
     // init private variables
     lastState = digitalRead(inPin);
     currentState = lastState;
-    
     return;
+}
+
+float calcPercentage(int high, int low) {
+	return (float)high / (high + low);
 }
 
 void Button::loop(void) {
@@ -41,7 +45,7 @@ void Button::loop(void) {
 			lastPressTime = millis();
 
 			//calculate percentage
-			percentage = (float)countHigh / (countHigh + countLow);
+			percentage = calcPercentage(countHigh, countLow);
 
 			// check percentage of success
 			/*
@@ -64,11 +68,20 @@ void Button::loop(void) {
 				++countLow;
 			else
 				++countHigh;
+
+			// Check for time saving on false contact
+			if(millis() - eStartTime > (float)ETIME/3 && midEvaluation == false) {
+				percentage = calcPercentage(countHigh, countLow);
+				midEvaluation = true;
+				if(percentage < PRECISION)
+					isEvaluating = false;
+			}
 		}
 	}
 	else if(lastState == LOW && currentState == HIGH && (millis() - lastPressTime > BLOCKPRESS)) { // if the button is pressed and is not evaluating start the evaluation time
 		// Serial.println("Start evaluating");
 		isEvaluating = true;
+		midEvaluation = false;
 		eStartTime = millis();
 		resetCounter();
 	}

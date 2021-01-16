@@ -2,7 +2,6 @@
 #define Button_h
 
 #include <Arduino.h>
-#define NOTUSED -1
 
 class Button
 {
@@ -16,6 +15,7 @@ class Button
                 int countHigh;
                 float percentage;
                 boolean isEvaluating = false;
+                boolean midEvaluation = false;
                 // evaluation starting time
                 unsigned long eStartTime;
                 unsigned long lastPressTime;
