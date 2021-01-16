@@ -24,8 +24,8 @@ void Button::setup(void) {
     pinMode(outPin, OUTPUT);
 
     // init private variables
-    currentState = digitalRead(inPin);
-    lastState = currentState;
+    lastState = digitalRead(inPin);
+    currentState = lastState;
     
     return;
 }
@@ -39,9 +39,21 @@ void Button::loop(void) {
 			isEvaluating = false;
 			// update last press
 			lastPressTime = millis();
-			
+
+			//calculate percentage
+			percentage = (float)countHigh / (countHigh + countLow);
+
 			// check percentage of success
-			if(countHigh / (countHigh + countLow) > PRECISION) {
+			/*
+			// for debug
+			Serial.print("The countHigh is: ");
+			Serial.println(countHigh);
+			Serial.print("The countLow is: ");
+			Serial.println(countLow);
+			Serial.print("The percentage is: ");
+			Serial.println(percentage);
+			*/
+			if(percentage > PRECISION) {
 				lightState =! lightState;
 				digitalWrite(outPin, lightState);
 			}
@@ -55,6 +67,7 @@ void Button::loop(void) {
 		}
 	}
 	else if(lastState == LOW && currentState == HIGH && (millis() - lastPressTime > BLOCKPRESS)) { // if the button is pressed and is not evaluating start the evaluation time
+		// Serial.println("Start evaluating");
 		isEvaluating = true;
 		eStartTime = millis();
 		resetCounter();

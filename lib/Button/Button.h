@@ -14,6 +14,7 @@ class Button
                 int lastState;
                 int countLow;
                 int countHigh;
+                float percentage;
                 boolean isEvaluating = false;
                 // evaluation starting time
                 unsigned long eStartTime;
