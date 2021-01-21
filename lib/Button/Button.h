@@ -8,7 +8,6 @@ class Button
 	private:
                 int inPin;
                 int outPin;
-                int lightState;
                 int currentState;
                 int lastState;
                 int countLow;

@@ -1,8 +1,8 @@
 #include <Button.h>
 #include <Logger.h>
-#define ETIME 50
+#define ETIME 25
 #define BLOCKPRESS 500 // 0.5 sec of block
-#define PRECISION 0.70
+#define PRECISION 0.40
 
 void Button::resetCounter(void) {
 	countLow = 0;
@@ -13,7 +13,6 @@ void Button::resetCounter(void) {
 Button::Button(int in, int out) {
 	inPin = in;
     outPin = out;
-    lightState = LOW;
 	lastPressTime = millis();
 	eStartTime = lastPressTime;
 	resetCounter();
@@ -58,8 +57,7 @@ void Button::loop(void) {
 			Serial.println(percentage);
 			*/
 			if(percentage > PRECISION) {
-				lightState =! lightState;
-				digitalWrite(outPin, lightState);
+				digitalWrite(outPin, !digitalRead(outPin));
 			}
 		}
 		else {
