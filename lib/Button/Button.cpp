@@ -10,9 +10,8 @@ void Button::resetCounter(void) {
 	return;
 }
 
-Button::Button(int in, int out) {
-	inPin = in;
-    outPin = out;
+Button::Button(int pin) {
+	this->pin = pin;
 	lastPressTime = millis();
 	eStartTime = lastPressTime;
 	resetCounter();
@@ -20,11 +19,10 @@ Button::Button(int in, int out) {
 
 void Button::setup(void) {
 	// init hardware
-    pinMode(inPin, INPUT);
-    pinMode(outPin, OUTPUT);
+    pinMode(pin, INPUT);
 
     // init private variables
-    lastState = digitalRead(inPin);
+    lastState = digitalRead(pin);
     currentState = lastState;
     return;
 }
@@ -33,8 +31,8 @@ float calcPercentage(int high, int low) {
 	return (float)high / (high + low);
 }
 
-void Button::loop(void) {
-	currentState = digitalRead(inPin);
+boolean Button::isPressed(void) {
+	currentState = digitalRead(pin);
 	
 	if(isEvaluating) { // is evaluating
 		
@@ -57,7 +55,7 @@ void Button::loop(void) {
 			Serial.println(percentage);
 			*/
 			if(percentage > PRECISION) {
-				digitalWrite(outPin, !digitalRead(outPin));
+				return true;
 			}
 		}
 		else {
@@ -85,5 +83,5 @@ void Button::loop(void) {
 	}
 
 	lastState = currentState;
-	return;
+	return false;
 }

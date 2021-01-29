@@ -24,25 +24,25 @@
 */
 
 #include <Arduino.h>
-#include <Controllino.h>
-#include <Button.h>
+#include <config.h>
+#include <Trigger.h>
 
-Button buttons[] = {
-  Button(CONTROLLINO_A5, CONTROLLINO_R0), // Ballatoio
-  Button(CONTROLLINO_A14, CONTROLLINO_R1), // Ext nord
-  Button(CONTROLLINO_A13, CONTROLLINO_R2), // Ext cucina
-  Button(CONTROLLINO_A4, CONTROLLINO_R3), // Stanza 2 -- Ema
-  Button(CONTROLLINO_A12, CONTROLLINO_R4), // Cucina
-  Button(CONTROLLINO_A8, CONTROLLINO_R5), // Stanza 3 -- Gio
-  Button(CONTROLLINO_A2, CONTROLLINO_R6), // Corridoio
-  Button(CONTROLLINO_A9, CONTROLLINO_R5), // Esterno 3 -- Gio --> default R7
-  Button(CONTROLLINO_A6, CONTROLLINO_R8), // Lavanderia
-  Button(CONTROLLINO_A7, CONTROLLINO_R9), // Bagno piccolo
-  Button(CONTROLLINO_A11, CONTROLLINO_R10), // Sala
-  Button(CONTROLLINO_A3, CONTROLLINO_R3), // Esterno 2 - Ema --> default R11
-  Button(CONTROLLINO_A1, CONTROLLINO_R12), // Esterno 1
-  Button(CONTROLLINO_A10, CONTROLLINO_R13), // Bagno
-  Button(CONTROLLINO_A0, CONTROLLINO_R14) // Stanza 1
+Trigger triggers[] = {
+  Trigger(&button_A5, &light_R0), // Ballatoio
+  Trigger(&button_A14, &light_R1), // Ext nord
+  Trigger(&button_A13, &light_R2), // Ext cucina
+  Trigger(&button_A4, &light_R3), // Stanza 2 -- Ema
+  Trigger(&button_A12, &light_R4), // Cucina
+  Trigger(&button_A8, &light_R5), // Stanza 3 -- Gio
+  Trigger(&button_A2, &light_R6), // Corridoio
+  Trigger(&button_A9, &light_R5), // Esterno 3 -- Gio --> default R7
+  Trigger(&button_A6, &light_R8), // Lavanderia
+  Trigger(&button_A7, &light_R9), // Bagno piccolo
+  Trigger(&button_A11, &light_R10), // Sala
+  Trigger(&button_A3, &light_R3), // Esterno 2 - Ema --> default R11
+  Trigger(&button_A1, &light_R12), // Esterno 1
+  Trigger(&button_A10, &light_R13), // Bagno
+  Trigger(&button_A0, &light_R14) // Stanza 1
 };
 
 /*
@@ -61,14 +61,14 @@ Button buttons[] = {
 void setup() {
   Serial.begin(9600);
 
-  for(auto &item : buttons) {
-    // initialize in/out pin
+  for(auto &item : triggers) {
+    // initialize in pin
     item.setup();
   }
 }
 
 void loop() {
-  for(auto &item : buttons) {
+  for(auto &item : triggers) {
     item.loop();
   }
 }

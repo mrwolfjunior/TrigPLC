@@ -6,8 +6,7 @@
 class Button
 {
 	private:
-                int inPin;
-                int outPin;
+                int pin;
                 int currentState;
                 int lastState;
                 int countLow;
@@ -18,11 +17,11 @@ class Button
                 // evaluation starting time
                 unsigned long eStartTime;
                 unsigned long lastPressTime;
-        public:
-                Button(int in, int out);
                 void resetCounter(void);
+        public:
+                Button(int pin);
                 void setup(void);
-                void loop(void);
+                boolean isPressed(void);
 };
 
 #endif
