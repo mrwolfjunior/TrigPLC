@@ -1,5 +1,4 @@
 #include <Trigger.h>
-#include <Logger.h>
 
 Trigger::Trigger(Button * button, Light * light) {
 	this->button = button;

@@ -23,7 +23,7 @@
  *                  CONTROLLINO_R15};
 */
 
-#include <Arduino.h>
+#include <Arduino_FreeRTOS.h>
 #include <config.h>
 #include <Trigger.h>
 
@@ -45,6 +45,8 @@ Trigger triggers[] = {
   Trigger(&button_A0, &light_R14) // Stanza 1
 };
 
+void TaskTrigger( void *pvParameters );
+
 /*
 // Luci esterne su A3
 
@@ -61,14 +63,30 @@ Button buttons[] = {
 void setup() {
   Serial.begin(9600);
 
-  for(auto &item : triggers) {
-    // initialize in pin
-    item.setup();
-  }
+   xTaskCreate(
+    TaskTrigger
+    ,  "Trigger"  // A name just for humans
+    ,  128  // This stack size can be checked & adjusted by reading the Stack Highwater
+    ,  NULL
+    ,  2  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+    ,  NULL );
+
+
 }
 
 void loop() {
+  
+}
+
+void TaskTrigger( void *pvParameters __attribute__((unused)) ) {
+  // initialize in pin
   for(auto &item : triggers) {
-    item.loop();
+    item.setup();
+  }
+
+  for (;;) {
+    for(auto &item : triggers) {
+      item.loop();
+    }
   }
 }
