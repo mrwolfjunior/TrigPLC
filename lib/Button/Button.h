@@ -6,10 +6,9 @@
 class Button
 {
 	private:
-                int pin;
+                uint8_t pin;
                 int currentState;
                 int lastState;
-                unsigned long lastCheck;
         public:
                 Button(int pin);
                 void setup(void);
