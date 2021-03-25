@@ -50,13 +50,13 @@ void TaskTrigger( void *pvParameters );
 /*
 // Luci esterne su A3
 
-Button buttons[] = {
-  Button(CONTROLLINO_A0, CONTROLLINO_R0), // Cucina
-  Button(CONTROLLINO_A2, CONTROLLINO_R1), // Locale tecnico - Ipotizzato ingresso
-  Button(CONTROLLINO_A1, CONTROLLINO_R2), // Salone
-  Button(CONTROLLINO_A4, CONTROLLINO_R3), // Garage
-  Button(CONTROLLINO_A3, CONTROLLINO_R4), // Est. Porta
-  Button(CONTROLLINO_A5, CONTROLLINO_R5) // Gradini
+Trigger triggers[] = {
+  Trigger(&button_A0, &light_R0), // Cucina
+  Trigger(&button_A2, &light_R1), // Locale tecnico - Ipotizzato ingresso
+  Trigger(&button_A1, &light_R2), // Salone
+  Trigger(&button_A4, &light_R3), // Garage
+  Trigger(&button_A3, &light_R4), // Est. Porta
+  Trigger(&button_A5, &light_R5) // Gradini
 };
 */
 
