@@ -6,7 +6,7 @@
 class Light
 {
 	private:
-                int pin;
+                uint8_t pin;
                 int state;
         public:
                 Light(int pin);

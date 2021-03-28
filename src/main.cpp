@@ -23,7 +23,7 @@
  *                  CONTROLLINO_R15};
 */
 
-#include <Arduino.h>
+#include <Arduino_FreeRTOS.h>
 #include <config.h>
 #include <Trigger.h>
 
@@ -45,30 +45,48 @@ Trigger triggers[] = {
   Trigger(&button_A0, &light_R14) // Stanza 1
 };
 
+void TaskTrigger( void *pvParameters );
+
 /*
 // Luci esterne su A3
 
-Button buttons[] = {
-  Button(CONTROLLINO_A0, CONTROLLINO_R0), // Cucina
-  Button(CONTROLLINO_A2, CONTROLLINO_R1), // Locale tecnico - Ipotizzato ingresso
-  Button(CONTROLLINO_A1, CONTROLLINO_R2), // Salone
-  Button(CONTROLLINO_A4, CONTROLLINO_R3), // Garage
-  Button(CONTROLLINO_A3, CONTROLLINO_R4), // Est. Porta
-  Button(CONTROLLINO_A5, CONTROLLINO_R5) // Gradini
+Trigger triggers[] = {
+  Trigger(&button_A0, &light_R0), // Cucina
+  Trigger(&button_A2, &light_R1), // Locale tecnico - Ipotizzato ingresso
+  Trigger(&button_A1, &light_R2), // Salone
+  Trigger(&button_A4, &light_R3), // Garage
+  Trigger(&button_A3, &light_R4), // Est. Porta
+  Trigger(&button_A5, &light_R5) // Gradini
 };
 */
 
 void setup() {
-  Serial.begin(9600);
 
-  for(auto &item : triggers) {
-    // initialize in pin
-    item.setup();
-  }
+   xTaskCreate(
+    TaskTrigger
+    ,  "Trigger"  // A name just for humans
+    ,  128  // This stack size can be checked & adjusted by reading the Stack Highwater
+    ,  NULL
+    ,  3  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+    ,  NULL );
+
+
 }
 
 void loop() {
+}
+
+void TaskTrigger( void *pvParameters __attribute__((unused)) ) {
+  // initialize in pin
   for(auto &item : triggers) {
-    item.loop();
+    item.setup();
+  }
+
+  for (;;) {
+    for(auto &item : triggers) {
+      item.loop();
+    }
+
+    vTaskDelay(1); // one tick delay (15ms) in between reads for stability
   }
 }
