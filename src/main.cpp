@@ -22,11 +22,26 @@
  *                  CONTROLLINO_R10, CONTROLLINO_R11, CONTROLLINO_R12, CONTROLLINO_R13, CONTROLLINO_R14,
  *                  CONTROLLINO_R15};
 */
-
 #include <Arduino_FreeRTOS.h>
+#include <SPI.h>
+#include <Ethernet.h>
 #include <config.h>
-#include <Trigger.h>
 
+// FreeRTOS variable and function
+void TaskTrigger( void *pvParameters );
+void TaskIOT( void *pvParameters );
+TaskHandle_t TaskIOTHandle; // handler for TaskIOT
+
+// Ethernet variable
+byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };   //physical mac address
+byte ip[] = { 192, 168, 88, 15 };                      // ip in lan (that's what you need to use in your browser. ("192.168.1.178")
+byte gateway[] = { 192, 168, 88, 1 };                   // internet access via router
+byte subnet[] = { 255, 255, 255, 0 };                  //subnet mask
+EthernetServer server(80);                             //server port 
+String readString;
+
+// Trigger map
+/*
 Trigger triggers[] = {
   Trigger(&button_A5, &light_R0), // Ballatoio
   Trigger(&button_A14, &light_R1), // Ext nord
@@ -44,10 +59,9 @@ Trigger triggers[] = {
   Trigger(&button_A10, &light_R13), // Bagno
   Trigger(&button_A0, &light_R14) // Stanza 1
 };
+*/
 
-void TaskTrigger( void *pvParameters );
 
-/*
 // Luci esterne su A3
 
 Trigger triggers[] = {
@@ -58,9 +72,10 @@ Trigger triggers[] = {
   Trigger(&button_A3, &light_R4), // Est. Porta
   Trigger(&button_A5, &light_R5) // Gradini
 };
-*/
 
 void setup() {
+
+
 
    xTaskCreate(
     TaskTrigger
@@ -70,7 +85,13 @@ void setup() {
     ,  3  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
     ,  NULL );
 
-
+    xTaskCreate(
+    TaskIOT
+    ,  "IOT"  // A name just for humans
+    ,  128  // This stack size can be checked & adjusted by reading the Stack Highwater
+    ,  NULL
+    ,  1  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+    ,  &TaskIOTHandle );
 }
 
 void loop() {
@@ -88,5 +109,55 @@ void TaskTrigger( void *pvParameters __attribute__((unused)) ) {
     }
 
     vTaskDelay(1); // one tick delay (15ms) in between reads for stability
+  }
+}
+
+void TaskIOT( void *pvParameters __attribute__((unused)) ) {
+  
+  Ethernet.begin(mac, ip, gateway, subnet);
+  vTaskDelay(1);
+
+  // Check for Ethernet hardware present
+  if (Ethernet.hardwareStatus() == EthernetNoHardware) {
+    vTaskDelete(TaskIOTHandle); // Ethernet shield not found, delete task
+  }
+  
+  while (Ethernet.linkStatus() == LinkOFF) {
+    vTaskDelay(60000 / portTICK_PERIOD_MS); // Ethernet cable is not connected. Wait until cable is connected
+  }
+
+  server.begin(); // start to listen for clients
+
+  for (;;) {
+    EthernetClient client = server.available();
+    if (client) {
+      while (client.connected()) {   
+        if (client.available()) {
+          char c = client.read();
+      
+          //read char by char HTTP request
+          if (readString.length() < 100) {
+            //store characters to string
+            readString += c;
+          }
+
+          //if HTTP request has ended
+          if (c == '\n') {          
+            //stopping client
+            client.stop();
+            //controls the Arduino if you press the buttons
+            if (readString.indexOf("?LabOn") >0){
+              light_R1.setState(HIGH);
+            }
+            if (readString.indexOf("?LabOff") >0){
+              light_R1.setState(LOW);
+            }
+            //clearing string for next read
+            readString="";  
+            
+          }
+        }
+      }
+    }
   }
 }
