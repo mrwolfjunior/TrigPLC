@@ -25,6 +25,8 @@
 #include <Arduino_FreeRTOS.h>
 #include <SPI.h>
 #include <Ethernet.h>
+#include <PubSubClient.h>
+#include <ArduinoJson.h> 
 #include <config.h>
 
 // FreeRTOS variable and function
@@ -32,13 +34,21 @@ void TaskTrigger( void *pvParameters );
 void TaskIOT( void *pvParameters );
 TaskHandle_t TaskIOTHandle; // handler for TaskIOT
 
-// Ethernet variable
-byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };   //physical mac address
-byte ip[] = { 192, 168, 88, 15 };                      // ip in lan (that's what you need to use in your browser. ("192.168.1.178")
-byte gateway[] = { 192, 168, 88, 1 };                   // internet access via router
-byte subnet[] = { 255, 255, 255, 0 };                  //subnet mask
-EthernetServer server(80);                             //server port 
-String readString;
+EthernetClient ethClient;
+PubSubClient mqttClient(ethClient);
+long lastMQTTConnection = MQTT_CONNECTION_TIMEOUT;
+StaticJsonDocument<256> staticJsonDocument;
+char jsonBuffer[256];
+char MQTT_PREFIX[] = "homeassistant/light/laboratorio";
+char MQTT_CONFIG_TOPIC[] = "homeassistant/light/laboratorio/config";
+char MQTT_STATE_TOPIC[] = "homeassistant/light/laboratorio/state";
+char MQTT_COMMAND_TOPIC[] = "homeassistant/light/laboratorio/set";
+char MQTT_STATUS_TOPIC[] = "homeassistant/light/laboratorio/status";
+
+void connectToMQTT();
+void publishToMQTT(char* p_topic, char* p_payload);
+void subscribeToMQTT(char* p_topic);
+void handleMQTTMessage(char* p_topic, byte* p_payload, unsigned int p_length);
 
 // Trigger map
 /*
@@ -65,13 +75,14 @@ Trigger triggers[] = {
 // Luci esterne su A3
 
 Trigger triggers[] = {
-  Trigger(&button_A0, &light_R0), // Cucina
-  Trigger(&button_A2, &light_R1), // Locale tecnico - Ipotizzato ingresso
-  Trigger(&button_A1, &light_R2), // Salone
-  Trigger(&button_A4, &light_R3), // Garage
-  Trigger(&button_A3, &light_R4), // Est. Porta
-  Trigger(&button_A5, &light_R5) // Gradini
+  Trigger(&button_A0, &light_R0, "cucina"), // Cucina
+  Trigger(&button_A2, &light_R1, "laboratorio"), // Locale tecnico - Ipotizzato ingresso
+  Trigger(&button_A1, &light_R2, "magazzino"), // Salone
+  Trigger(&button_A4, &light_R3, "garage"), // Garage
+  Trigger(&button_A3, &light_R4, "ingresso"), // Est. Porta
+  Trigger(&button_A5, &light_R5, "gradini") // Gradini
 };
+
 
 void setup() {
 
@@ -114,7 +125,7 @@ void TaskTrigger( void *pvParameters __attribute__((unused)) ) {
 
 void TaskIOT( void *pvParameters __attribute__((unused)) ) {
   
-  Ethernet.begin(mac, ip, gateway, subnet);
+  Ethernet.begin(ETH_MAC, ETH_IP, ETH_GATEWAY, ETH_SUBNET);
   vTaskDelay(1);
 
   // Check for Ethernet hardware present
@@ -126,37 +137,116 @@ void TaskIOT( void *pvParameters __attribute__((unused)) ) {
     vTaskDelay(60000 / portTICK_PERIOD_MS); // Ethernet cable is not connected. Wait until cable is connected
   }
 
-  server.begin(); // start to listen for clients
+  mqttClient.setServer(MQTT_SERVER, MQTT_SERVER_PORT);
+  mqttClient.setCallback(handleMQTTMessage);
 
   for (;;) {
-    EthernetClient client = server.available();
-    if (client) {
-      while (client.connected()) {   
-        if (client.available()) {
-          char c = client.read();
-      
-          //read char by char HTTP request
-          if (readString.length() < 100) {
-            //store characters to string
-            readString += c;
-          }
+    connectToMQTT();
+    mqttClient.loop();
+  }
+}
 
-          //if HTTP request has ended
-          if (c == '\n') {          
-            //stopping client
-            client.stop();
-            //controls the Arduino if you press the buttons
-            if (readString.indexOf("?LabOn") >0){
-              light_R1.setState(HIGH);
-            }
-            if (readString.indexOf("?LabOff") >0){
-              light_R1.setState(LOW);
-            }
-            //clearing string for next read
-            readString="";  
-            
-          }
-        }
+
+void connectToMQTT() {
+  if (!mqttClient.connected()) {
+    if (lastMQTTConnection + MQTT_CONNECTION_TIMEOUT < xTaskGetTickCount()) {
+      if (mqttClient.connect(MQTT_CLIENT_ID, MQTT_USERNAME, MQTT_PASSWORD, MQTT_STATUS_TOPIC, 0, 1, "dead")) {
+
+        mqttClient.publish(MQTT_STATUS_TOPIC, "alive", true);
+
+        // MQTT discovery for Home Assistant
+        staticJsonDocument["~"] = MQTT_PREFIX;
+        staticJsonDocument["name"] = "Laboratorio";
+        staticJsonDocument["unique_id"] = "laboratorio";
+        staticJsonDocument["cmd_t"] = "~/set";
+        staticJsonDocument["stat_t"] = "~/state";
+        staticJsonDocument["schema"] = "json";
+        //staticJsonDocument["state_topic"] = MQTT_STATE_TOPIC;
+        //staticJsonDocument["command_topic"] = MQTT_COMMAND_TOPIC;
+        serializeJson(staticJsonDocument, jsonBuffer);
+        publishToMQTT(MQTT_CONFIG_TOPIC, jsonBuffer);
+
+        subscribeToMQTT(MQTT_COMMAND_TOPIC);
+      } else {
+        /*
+        DEBUG_PRINTLN(F("ERROR: The connection to the MQTT broker failed"));
+        DEBUG_PRINT(F("INFO: MQTT username: "));
+        DEBUG_PRINTLN(MQTT_USERNAME);
+        DEBUG_PRINT(F("INFO: MQTT password: "));
+        DEBUG_PRINTLN(MQTT_PASSWORD);
+        DEBUG_PRINT(F("INFO: MQTT broker: "));
+        DEBUG_PRINTLN(MQTT_SERVER);
+        */
+      }
+        lastMQTTConnection = xTaskGetTickCount();
+    }
+  }
+}
+
+void publishToMQTT(char* p_topic, char* p_payload) {
+  if (mqttClient.publish(p_topic, p_payload, true)) {
+    /*
+    DEBUG_PRINT(F("INFO: MQTT message published successfully, topic: "));
+    DEBUG_PRINT(p_topic);
+    DEBUG_PRINT(F(", payload: "));
+    DEBUG_PRINTLN(p_payload);
+    */
+  } else {
+    /*
+    DEBUG_PRINTLN(F("ERROR: MQTT message not published, either connection lost, or message too large. Topic: "));
+    DEBUG_PRINT(p_topic);
+    DEBUG_PRINT(F(" , payload: "));
+    DEBUG_PRINTLN(p_payload);
+    */
+  }
+}
+
+void subscribeToMQTT(char* p_topic) {
+  if (mqttClient.subscribe(p_topic)) {
+    /*
+    DEBUG_PRINT(F("INFO: Sending the MQTT subscribe succeeded for topic: "));
+    DEBUG_PRINTLN(p_topic);
+    */
+  } else {
+    /*
+    DEBUG_PRINT(F("ERROR: Sending the MQTT subscribe failed for topic: "));
+    DEBUG_PRINTLN(p_topic);
+    */
+  }
+}
+
+void handleMQTTMessage(char* p_topic, byte* p_payload, unsigned int p_length) {
+  // light_R1
+
+  // concatenates the payload into a string
+  String payload;
+  for (uint8_t i = 0; i < p_length; i++) {
+    payload.concat((char)p_payload[i]);
+  }
+  
+  /*
+    DEBUG_PRINTLN(F("INFO: New MQTT message received"));
+    DEBUG_PRINT(F("INFO: MQTT topic: "));
+    DEBUG_PRINTLN(p_topic);
+    DEBUG_PRINT(F("INFO: MQTT payload: "));
+    DEBUG_PRINTLN(payload);
+  */
+  
+  if (String(MQTT_COMMAND_TOPIC).equals(p_topic)) {
+    DynamicJsonDocument doc(1024);
+    auto error = deserializeJson(doc, p_payload);
+    //JsonObject& root = dynamicJsonBuffer.parseObject(p_payload);
+    if (error) {
+      //Serial.print(F("deserializeJson() failed with code "));
+      //Serial.println(error.c_str());
+      return;
+    }
+
+    if (doc.containsKey("state")) {
+      if (strcmp(doc["state"], MQTT_STATE_ON_PAYLOAD) == 0) {
+        light_R1.setState(HIGH);
+      } else if (strcmp(doc["state"], MQTT_STATE_OFF_PAYLOAD) == 0) {
+        light_R1.setState(LOW);
       }
     }
   }

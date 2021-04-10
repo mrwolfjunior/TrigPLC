@@ -34,3 +34,20 @@ Light light_R11(CONTROLLINO_R11);
 Light light_R12(CONTROLLINO_R12);
 Light light_R13(CONTROLLINO_R13);
 Light light_R14(CONTROLLINO_R14);
+
+// Ethernet variable
+byte ETH_MAC[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };   //physical mac address
+byte ETH_IP[] = { 192, 168, 88, 15 };                      // ip in lan (that's what you need to use in your browser. ("192.168.1.178")
+byte ETH_GATEWAY[] = { 192, 168, 88, 1 };                   // internet access via router
+byte ETH_SUBNET[] = { 255, 255, 255, 0 };                  //subnet mask
+
+#define MQTT_USERNAME     "mqtt_user"
+#define MQTT_PASSWORD     "mqtt_password"
+#define MQTT_SERVER       "192.168.88.232"
+#define MQTT_SERVER_PORT  1883
+#define MQTT_CONNECTION_TIMEOUT 5000
+
+#define MQTT_STATE_ON_PAYLOAD   "ON"
+#define MQTT_STATE_OFF_PAYLOAD  "OFF"
+
+char MQTT_CLIENT_ID[7] = {0};
