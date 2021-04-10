@@ -61,8 +61,8 @@ void handleMQTTMessage(char* p_topic, byte* p_payload, unsigned int p_length);
   Trigger triggers[] = {
     Trigger(&button_A0, &light_R0, "Lavanderia", "p0_lavanderia"), // Lavanderia
     Trigger(&button_A2, &light_R1, "Laboratorio", "p0_laboratorio"), // Locale tecnico - Ipotizzato ingresso
-    Trigger(&button_A1, &light_R2, "Magazzino", "p0_magazzino"), // Salone
-    Trigger(&button_A4, &light_R3, "Garage", "p0_garage"), // Garage
+    Trigger(&button_A1, &light_R2, "Garage", "p0_garage"), // Salone
+    Trigger(&button_A4, &light_R3, "Magazzino", "p0_magazzino"), // Garage
     Trigger(&button_A3, &light_R4, "Ingresso", "p0_ingresso"), // Est. Porta
     Trigger(&button_A5, &light_R5, "Gradini", "p0_gradini") // Gradini
   }; // Luci esterne su A3
@@ -123,7 +123,7 @@ void setup() {
     xTaskCreate(
     TaskIOT
     ,  "IOT"  // A name just for humans
-    ,  2048  // This stack size can be checked & adjusted by reading the Stack Highwater
+    ,  1024  // This stack size can be checked & adjusted by reading the Stack Highwater
     ,  NULL
     ,  1  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
     ,  &TaskIOTHandle );
