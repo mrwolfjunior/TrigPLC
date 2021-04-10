@@ -30,7 +30,7 @@
 #include <config.h>
 #include <semphr.h>  // add the FreeRTOS functions for Semaphores (or Flags).
 
-#define FLOOR 0
+#define FLOOR 1
 
 // Declare a mutex Semaphore Handle which we will use to manage the Serial Port.
 // It will be used to ensure only only one Task is accessing this resource at any time.
@@ -42,6 +42,16 @@ void TaskIOT( void *pvParameters );
 TaskHandle_t TaskIOTHandle; // handler for TaskIOT
 
 EthernetClient ethClient;
+// Ethernet variable
+byte ETH_MAC[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };   //physical mac address
+byte ETH_GATEWAY[] = { 192, 168, 88, 1 };                   // internet access via router
+byte ETH_SUBNET[] = { 255, 255, 255, 0 };                  //subnet mask
+#if FLOOR == 0
+  byte ETH_IP[] = { 192, 168, 88, 15 };                      // ip in lan (that's what you need to use in your browser. ("192.168.1.178")
+#elif FLOOR == 1
+  byte ETH_IP[] = { 192, 168, 88, 16 };                      // ip in lan (that's what you need to use in your browser. ("192.168.1.178")
+#endif
+
 PubSubClient mqttClient(ethClient);
 long lastMQTTConnection = MQTT_CONNECTION_TIMEOUT;
 StaticJsonDocument<256> staticJsonDocument;
@@ -67,29 +77,24 @@ void handleMQTTMessage(char* p_topic, byte* p_payload, unsigned int p_length);
     Trigger(&button_A5, &light_R5, "Gradini", "p0_gradini") // Gradini
   }; // Luci esterne su A3
 #elif FLOOR == 1
-
+  Trigger triggers[] = {
+    Trigger(&button_A5, &light_R0, "Ballatoio", "p1_ballatoio"), // Ballatoio
+    Trigger(&button_A14, &light_R1, "Esterno sala", "p1_est_sala"), // Ext nord
+    Trigger(&button_A13, &light_R2, "Esterno cucina", "p1_est_cucina"), // Ext cucina
+    Trigger(&button_A4, &light_R3, "Stanza Ema", "p1_stanza_ema"), // Stanza 2 -- Ema
+    Trigger(&button_A12, &light_R4, "Cucina", "p1_cucina"), // Cucina
+    Trigger(&button_A8, &light_R5, "Stanza Gio", "p1_stanza_gio"), // Stanza 3 -- Gio
+    Trigger(&button_A2, &light_R6, "Corridoio", "p1_corridoio"), // Corridoio
+    Trigger(&button_A9, &light_R5, "Esterno Gio", "p1_est_gio"), // Esterno 3 -- Gio --> default R7
+    Trigger(&button_A6, &light_R8, "Lavanderia", "p1_lavanderia"), // Lavanderia
+    Trigger(&button_A7, &light_R9, "Bagno piccolo", "p1_bagno_piccolo"), // Bagno piccolo
+    Trigger(&button_A11, &light_R10, "Sala", "p1_sala"), // Sala
+    Trigger(&button_A3, &light_R3, "Esterno Ema", "p1_est_ema"), // Esterno 2 - Ema --> default R11
+    Trigger(&button_A1, &light_R12, "Esterno camera da letto", "p1_est_camera"), // Esterno 1
+    Trigger(&button_A10, &light_R13, "Bagno", "p1_bagno"), // Bagno
+    Trigger(&button_A0, &light_R14, "Camera da letto", "p1_camera") // Stanza 1
+  };
 #endif
-
-// Trigger map
-/*
-Trigger triggers[] = {
-  Trigger(&button_A5, &light_R0), // Ballatoio
-  Trigger(&button_A14, &light_R1), // Ext nord
-  Trigger(&button_A13, &light_R2), // Ext cucina
-  Trigger(&button_A4, &light_R3), // Stanza 2 -- Ema
-  Trigger(&button_A12, &light_R4), // Cucina
-  Trigger(&button_A8, &light_R5), // Stanza 3 -- Gio
-  Trigger(&button_A2, &light_R6), // Corridoio
-  Trigger(&button_A9, &light_R5), // Esterno 3 -- Gio --> default R7
-  Trigger(&button_A6, &light_R8), // Lavanderia
-  Trigger(&button_A7, &light_R9), // Bagno piccolo
-  Trigger(&button_A11, &light_R10), // Sala
-  Trigger(&button_A3, &light_R3), // Esterno 2 - Ema --> default R11
-  Trigger(&button_A1, &light_R12), // Esterno 1
-  Trigger(&button_A10, &light_R13), // Bagno
-  Trigger(&button_A0, &light_R14) // Stanza 1
-};
-*/
 
 
 void setup() {
@@ -171,11 +176,37 @@ void TaskIOT( void *pvParameters __attribute__((unused)) ) {
     item.setup_mqtt();
   }
 
+  char stateOnJson[256];
+  char stateOffJson[256];
+  staticJsonDocument["state"] = MQTT_STATE_ON_PAYLOAD;
+  serializeJson(staticJsonDocument, stateOnJson);
+  staticJsonDocument["state"] = MQTT_STATE_OFF_PAYLOAD;
+  serializeJson(staticJsonDocument, stateOffJson);
+
+  staticJsonDocument.clear();
+
   mqttClient.setServer(MQTT_SERVER, MQTT_SERVER_PORT);
   mqttClient.setCallback(handleMQTTMessage);
 
   for (;;) {
     connectToMQTT();
+
+    for(auto &item : triggers) {
+      if(item.isChanged()) {
+        switch (item.getState())
+        {
+        case LOW:
+          publishToMQTT(item.getMqttStateopic(), stateOffJson);
+          break;
+        case HIGH:
+          publishToMQTT(item.getMqttStateopic(), stateOnJson);
+          break;
+        default:
+          break;
+        }
+      }
+    }
+
     mqttClient.loop();
   }
 }

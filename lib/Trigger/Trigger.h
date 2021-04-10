@@ -10,6 +10,7 @@ class Trigger
 	private:
                 Button * button;
                 Light * light;
+                bool isChangedFlag;
                 String name;
                 String id;
                 String MQTT_PREFIX;
@@ -23,6 +24,8 @@ class Trigger
                 void setup_mqtt(void);
                 void loop(void);
                 void setState(int newState);
+                int getState(void);
+                bool isChanged(void);
                 String getName(void);
                 String getId(void);
                 const char * getMqttPrefix(void);
