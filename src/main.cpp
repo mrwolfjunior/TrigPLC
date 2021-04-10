@@ -30,6 +30,8 @@
 #include <config.h>
 #include <semphr.h>  // add the FreeRTOS functions for Semaphores (or Flags).
 
+#define FLOOR 0
+
 // Declare a mutex Semaphore Handle which we will use to manage the Serial Port.
 // It will be used to ensure only only one Task is accessing this resource at any time.
 SemaphoreHandle_t xSerialSemaphore;
@@ -44,16 +46,29 @@ PubSubClient mqttClient(ethClient);
 long lastMQTTConnection = MQTT_CONNECTION_TIMEOUT;
 StaticJsonDocument<256> staticJsonDocument;
 char jsonBuffer[256];
-char MQTT_PREFIX[] = "homeassistant/light/laboratorio";
-char MQTT_CONFIG_TOPIC[] = "homeassistant/light/laboratorio/config";
-char MQTT_STATE_TOPIC[] = "homeassistant/light/laboratorio/state";
-char MQTT_COMMAND_TOPIC[] = "homeassistant/light/laboratorio/set";
-char MQTT_STATUS_TOPIC[] = "homeassistant/light/laboratorio/status";
+String MQTT_CONTROLLINO_PREFIX = "homeassistant/light/controllino_p" + FLOOR;
+const char * MQTT_CONTROLLINO_CONFIG_TOPIC = String(MQTT_CONTROLLINO_PREFIX + "/config").c_str();
+const char * MQTT_CONTROLLINO_STATE_TOPIC = String(MQTT_CONTROLLINO_PREFIX + "/state").c_str();
+const char * MQTT_CONTROLLINO_COMMAND_TOPIC = String(MQTT_CONTROLLINO_PREFIX + "/set").c_str();
+const char * MQTT_CONTROLLINO_STATUS_TOPIC = String(MQTT_CONTROLLINO_PREFIX + "/status").c_str();
 
 void connectToMQTT();
-void publishToMQTT(char* p_topic, char* p_payload);
-void subscribeToMQTT(char* p_topic);
+void publishToMQTT(const char* p_topic, char* p_payload);
+void subscribeToMQTT(const char* p_topic);
 void handleMQTTMessage(char* p_topic, byte* p_payload, unsigned int p_length);
+
+#if FLOOR == O
+  Trigger triggers[] = {
+    Trigger(&button_A0, &light_R0, "Lavanderia", "p0_lavanderia"), // Lavanderia
+    Trigger(&button_A2, &light_R1, "Laboratorio", "p0_laboratorio"), // Locale tecnico - Ipotizzato ingresso
+    Trigger(&button_A1, &light_R2, "Magazzino", "p0_magazzino"), // Salone
+    Trigger(&button_A4, &light_R3, "Garage", "p0_garage"), // Garage
+    Trigger(&button_A3, &light_R4, "Ingresso", "p0_ingresso"), // Est. Porta
+    Trigger(&button_A5, &light_R5, "Gradini", "p0_gradini") // Gradini
+  }; // Luci esterne su A3
+#elif FLOOR == 1
+
+#endif
 
 // Trigger map
 /*
@@ -75,18 +90,6 @@ Trigger triggers[] = {
   Trigger(&button_A0, &light_R14) // Stanza 1
 };
 */
-
-
-// Luci esterne su A3
-
-Trigger triggers[] = {
-  Trigger(&button_A0, &light_R0, "cucina"), // Cucina
-  Trigger(&button_A2, &light_R1, "laboratorio"), // Locale tecnico - Ipotizzato ingresso
-  Trigger(&button_A1, &light_R2, "magazzino"), // Salone
-  Trigger(&button_A4, &light_R3, "garage"), // Garage
-  Trigger(&button_A3, &light_R4, "ingresso"), // Est. Porta
-  Trigger(&button_A5, &light_R5, "gradini") // Gradini
-};
 
 
 void setup() {
@@ -164,6 +167,10 @@ void TaskIOT( void *pvParameters __attribute__((unused)) ) {
     vTaskDelay(60000 / portTICK_PERIOD_MS); // Ethernet cable is not connected. Wait until cable is connected
   }
 
+  for(auto &item : triggers) {
+    item.setup_mqtt();
+  }
+
   mqttClient.setServer(MQTT_SERVER, MQTT_SERVER_PORT);
   mqttClient.setCallback(handleMQTTMessage);
 
@@ -177,22 +184,26 @@ void TaskIOT( void *pvParameters __attribute__((unused)) ) {
 void connectToMQTT() {
   if (!mqttClient.connected()) {
     if (lastMQTTConnection + MQTT_CONNECTION_TIMEOUT < xTaskGetTickCount()) {
-      if (mqttClient.connect(MQTT_CLIENT_ID, MQTT_USERNAME, MQTT_PASSWORD, MQTT_STATUS_TOPIC, 0, 1, "dead")) {
+      if (mqttClient.connect(MQTT_CLIENT_ID, MQTT_USERNAME, MQTT_PASSWORD, MQTT_CONTROLLINO_CONFIG_TOPIC, 0, 1, "dead")) {
 
-        mqttClient.publish(MQTT_STATUS_TOPIC, "alive", true);
+        mqttClient.publish(MQTT_CONTROLLINO_CONFIG_TOPIC, "alive", true);
 
-        // MQTT discovery for Home Assistant
-        staticJsonDocument["~"] = MQTT_PREFIX;
-        staticJsonDocument["name"] = "Laboratorio";
-        staticJsonDocument["unique_id"] = "laboratorio";
         staticJsonDocument["cmd_t"] = "~/set";
         staticJsonDocument["stat_t"] = "~/state";
         staticJsonDocument["schema"] = "json";
-        serializeJson(staticJsonDocument, jsonBuffer);
-        publishToMQTT(MQTT_CONFIG_TOPIC, jsonBuffer);
 
-        subscribeToMQTT(MQTT_COMMAND_TOPIC);
-      } else {
+        for(auto &item : triggers) {
+          // MQTT discovery for Home Assistant
+          staticJsonDocument["~"] = item.getMqttPrefix();
+          staticJsonDocument["name"] = item.getName();
+          staticJsonDocument["unique_id"] = item.getId();
+          serializeJson(staticJsonDocument, jsonBuffer);
+          publishToMQTT(item.getMqttCongigTopic(), jsonBuffer);
+
+          subscribeToMQTT(item.getMqttCommandTopic());
+        } 
+      }
+      else {
         if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 5 ) == pdTRUE )
         {
           Serial.println("ERROR: The connection to the MQTT broker failed");
@@ -204,7 +215,7 @@ void connectToMQTT() {
   }
 }
 
-void publishToMQTT(char* p_topic, char* p_payload) {
+void publishToMQTT(const char* p_topic, char* p_payload) {
   if (mqttClient.publish(p_topic, p_payload, true)) {
     if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 5 ) == pdTRUE )
     {
@@ -226,7 +237,7 @@ void publishToMQTT(char* p_topic, char* p_payload) {
   return;
 }
 
-void subscribeToMQTT(char* p_topic) {
+void subscribeToMQTT(const char* p_topic) {
   if (mqttClient.subscribe(p_topic)) {
     if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 5 ) == pdTRUE )
     {
@@ -262,29 +273,34 @@ void handleMQTTMessage(char* p_topic, byte* p_payload, unsigned int p_length) {
 
     xSemaphoreGive( xSerialSemaphore );
   }
-  
-  if (String(MQTT_COMMAND_TOPIC).equals(p_topic)) {
-    DynamicJsonDocument doc(1024);
-    auto error = deserializeJson(doc, p_payload);
-    if (error) {
-      if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 5 ) == pdTRUE )
-      {
-        Serial.println("deserializeJson() failed with code: ");
-        Serial.println(error.c_str());
 
-        xSemaphoreGive( xSerialSemaphore );
-      }
-      return;
-    }
+  for(auto &item : triggers) {
+    if(String(item.getMqttCommandTopic()).equals(p_topic)) {
+      DynamicJsonDocument doc(1024);
+      auto error = deserializeJson(doc, p_payload);
+      if (error) {
+        if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 5 ) == pdTRUE )
+        {
+          Serial.println("deserializeJson() failed with code: ");
+          Serial.println(error.c_str());
 
-    if (doc.containsKey("state")) {
-      if (strcmp(doc["state"], MQTT_STATE_ON_PAYLOAD) == 0) {
-        light_R1.setState(HIGH);
-      } else if (strcmp(doc["state"], MQTT_STATE_OFF_PAYLOAD) == 0) {
-        light_R1.setState(LOW);
+          xSemaphoreGive( xSerialSemaphore );
+        }
+        return;
       }
-      serializeJson(doc, jsonBuffer);
-      publishToMQTT(MQTT_STATE_TOPIC, jsonBuffer);
+
+      if (doc.containsKey("state")) {
+        if (strcmp(doc["state"], MQTT_STATE_ON_PAYLOAD) == 0) {
+          item.setState(HIGH);
+        } else if (strcmp(doc["state"], MQTT_STATE_OFF_PAYLOAD) == 0) {
+          item.setState(LOW);
+        }
+        serializeJson(doc, jsonBuffer);
+
+        publishToMQTT(item.getMqttStateopic(), jsonBuffer);
+      }
+
+      break;
     }
   }
 
