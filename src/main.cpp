@@ -30,6 +30,7 @@
 #include <config.h>
 #include <semphr.h>  // add the FreeRTOS functions for Semaphores (or Flags).
 
+#define DEBUG // uncomment to enable debug
 #define FLOOR 1
 
 // Declare a mutex Semaphore Handle which we will use to manage the Serial Port.
@@ -163,11 +164,13 @@ void TaskIOT( void *pvParameters __attribute__((unused)) ) {
   }
   
   while (Ethernet.linkStatus() == LinkOFF) {
-    if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 5 ) == pdTRUE )
-    {
-      Serial.println("ERROR: No ethernet cable connected, wait");
-      xSemaphoreGive( xSerialSemaphore );
-    }
+    #ifdef DEBUG
+      if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 5 ) == pdTRUE )
+      {
+        Serial.println("ERROR: No ethernet cable connected, wait");
+        xSemaphoreGive( xSerialSemaphore );
+      }
+    #endif
 
     vTaskDelay(60000 / portTICK_PERIOD_MS); // Ethernet cable is not connected. Wait until cable is connected
   }
@@ -235,11 +238,13 @@ void connectToMQTT() {
         } 
       }
       else {
-        if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 5 ) == pdTRUE )
-        {
-          Serial.println("ERROR: The connection to the MQTT broker failed");
-          xSemaphoreGive( xSerialSemaphore );
-        }
+        #ifdef DEBUG
+          if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 5 ) == pdTRUE )
+          {
+            Serial.println("ERROR: The connection to the MQTT broker failed");
+            xSemaphoreGive( xSerialSemaphore );
+          }
+        #endif
       }
       lastMQTTConnection = xTaskGetTickCount();
     }
@@ -248,21 +253,25 @@ void connectToMQTT() {
 
 void publishToMQTT(const char* p_topic, char* p_payload) {
   if (mqttClient.publish(p_topic, p_payload, true)) {
-    if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 5 ) == pdTRUE )
-    {
-      Serial.println("INFO: MQTT message published successfully, topic & payload: ");
-      Serial.println(p_topic);
-      Serial.println(p_payload);
-      xSemaphoreGive( xSerialSemaphore );
-    }
+    #ifdef DEBUG
+      if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 5 ) == pdTRUE )
+      {
+        Serial.println("INFO: MQTT message published successfully, topic & payload: ");
+        Serial.println(p_topic);
+        Serial.println(p_payload);
+        xSemaphoreGive( xSerialSemaphore );
+      }
+    #endif
   } else {
-    if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 5 ) == pdTRUE )
-    {
-      Serial.println("ERROR: MQTT message not published, either connection lost, or message too large. Topic & payload: ");
-      Serial.println(p_topic);
-      Serial.println(p_payload);
-      xSemaphoreGive( xSerialSemaphore );
-    }
+    #ifdef DEBUG
+      if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 5 ) == pdTRUE )
+      {
+        Serial.println("ERROR: MQTT message not published, either connection lost, or message too large. Topic & payload: ");
+        Serial.println(p_topic);
+        Serial.println(p_payload);
+        xSemaphoreGive( xSerialSemaphore );
+      }
+    #endif
   }
 
   return;
@@ -270,19 +279,23 @@ void publishToMQTT(const char* p_topic, char* p_payload) {
 
 void subscribeToMQTT(const char* p_topic) {
   if (mqttClient.subscribe(p_topic)) {
-    if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 5 ) == pdTRUE )
-    {
-      Serial.println("INFO: Sending the MQTT subscribe succeeded for topic: ");
-      Serial.println(p_topic);
-      xSemaphoreGive( xSerialSemaphore );
-    }
+    #ifdef DEBUG
+      if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 5 ) == pdTRUE )
+      {
+        Serial.println("INFO: Sending the MQTT subscribe succeeded for topic: ");
+        Serial.println(p_topic);
+        xSemaphoreGive( xSerialSemaphore );
+      }
+    #endif
   } else {
-   if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 5 ) == pdTRUE )
-    {
-      Serial.println("ERROR: Sending the MQTT subscribe failed for topic: ");
-      Serial.println(p_topic);
-      xSemaphoreGive( xSerialSemaphore );
-    }
+    #ifdef DEBUG
+      if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 5 ) == pdTRUE )
+      {
+        Serial.println("ERROR: Sending the MQTT subscribe failed for topic: ");
+        Serial.println(p_topic);
+        xSemaphoreGive( xSerialSemaphore );
+      }
+    #endif
   }
 }
 
@@ -295,21 +308,25 @@ void handleMQTTMessage(char* p_topic, byte* p_payload, unsigned int p_length) {
     payload.concat((char)p_payload[i]);
   }
 
-  if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 5 ) == pdTRUE )
-  {
-    Serial.println("INFO: New MQTT message received, topic:");
-    Serial.println(p_topic);
-    Serial.println("INFO: MQTT payload:");
-    Serial.println(payload);
+  #ifdef DEBUG
+    if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 5 ) == pdTRUE )
+    {
+      Serial.println("INFO: New MQTT message received, topic:");
+      Serial.println(p_topic);
+      Serial.println("INFO: MQTT payload:");
+      Serial.println(payload);
 
-    xSemaphoreGive( xSerialSemaphore );
-  }
+      xSemaphoreGive( xSerialSemaphore );
+    }
+  #endif
 
   for(auto &item : triggers) {
     if(String(item.getMqttCommandTopic()).equals(p_topic)) {
       DynamicJsonDocument doc(1024);
       auto error = deserializeJson(doc, p_payload);
       if (error) {
+
+        #ifdef DEBUG
         if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 5 ) == pdTRUE )
         {
           Serial.println("deserializeJson() failed with code: ");
@@ -317,6 +334,7 @@ void handleMQTTMessage(char* p_topic, byte* p_payload, unsigned int p_length) {
 
           xSemaphoreGive( xSerialSemaphore );
         }
+        #endif
         return;
       }
 
