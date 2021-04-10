@@ -10,8 +10,9 @@ class Trigger
 	private:
                 Button * button;
                 Light * light;
+                String name;
         public:
-                Trigger(Button * button, Light * light);
+                Trigger(Button * button, Light * light, String name);
                 void setup(void);
                 void loop(void);
 };

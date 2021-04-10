@@ -1,8 +1,9 @@
 #include <Trigger.h>
 
-Trigger::Trigger(Button * button, Light * light) {
+Trigger::Trigger(Button * button, Light * light, String name) {
 	this->button = button;
 	this->light = light;
+	this->name = name;
 	return;
 }
 
