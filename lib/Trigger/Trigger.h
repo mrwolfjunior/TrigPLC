@@ -14,8 +14,6 @@ class Trigger
                 bool isChangedFlag;
                 String name;
                 String id;
-                char jsonConfig[256];
-                StaticJsonDocument<256> staticJsonDocument;
                 String MQTT_PREFIX;
                 String MQTT_CONFIG_TOPIC;
                 String MQTT_STATE_TOPIC;
@@ -31,7 +29,6 @@ class Trigger
                 bool isChanged(void);
                 String getName(void);
                 String getId(void);
-                char * getJsonConfig(void);
                 const char * getMqttPrefix(void);
                 const char * getMqttConfigTopic(void);
                 const char * getMqttStateopic(void);

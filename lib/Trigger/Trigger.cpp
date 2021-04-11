@@ -21,14 +21,6 @@ void Trigger::setup_mqtt(void) {
 	MQTT_STATE_TOPIC = MQTT_PREFIX + "/state";
 	MQTT_COMMAND_TOPIC = MQTT_PREFIX + "/set";
 	MQTT_STATUS_TOPIC = MQTT_PREFIX + "/status";
-
-	staticJsonDocument["cmd_t"] = "~/set";
-	staticJsonDocument["stat_t"] = "~/state";
-	staticJsonDocument["schema"] = "json";
-	staticJsonDocument["~"] = MQTT_PREFIX;
-    staticJsonDocument["name"] = name;
-    staticJsonDocument["unique_id"] = id;
-	serializeJson(staticJsonDocument, jsonConfig);
 	return;
 }
 
@@ -62,10 +54,6 @@ String Trigger::getName(void) {
 }
 String Trigger::getId(void) {
 	return id;
-}
-
-char * Trigger::getJsonConfig(void) {
-	return jsonConfig;
 }
 
 const char * Trigger::getMqttPrefix(void) {

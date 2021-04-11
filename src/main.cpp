@@ -53,8 +53,23 @@ byte ETH_IP[] = {192, 168, 88, 15}; // ip in lan (that's what you need to use in
 byte ETH_IP[] = {192, 168, 88, 16}; // ip in lan (that's what you need to use in your browser. ("192.168.1.178")
 #endif
 
+#define MQTT_USERNAME "mqtt_user"
+#define MQTT_PASSWORD "mqtt_password"
+#define MQTT_SERVER "192.168.88.232"
+#define MQTT_SERVER_PORT 1883
+#define MQTT_TIMEOUT 20000
+
+#define MQTT_STATE_ON_PAYLOAD "ON"
+#define MQTT_STATE_OFF_PAYLOAD "OFF"
+
+#if FLOOR == 0
+String MQTT_CLIENT_ID = "con_p0";
+#elif FLOOR == 1
+String MQTT_CLIENT_ID = "con_p1";
+#endif
+
 PubSubClient mqttClient(ethClient);
-long lastMQTTConnection = MQTT_CONNECTION_TIMEOUT;
+long lastMQTTConnection = MQTT_TIMEOUT;
 StaticJsonDocument<256> staticJsonDocument;
 char jsonBuffer[256];
 char stateOnJson[256];
@@ -65,6 +80,7 @@ const char *MQTT_CONTROLLINO_STATE_TOPIC = String(MQTT_CONTROLLINO_PREFIX + "/st
 const char *MQTT_CONTROLLINO_COMMAND_TOPIC = String(MQTT_CONTROLLINO_PREFIX + "/set").c_str();
 const char *MQTT_CONTROLLINO_STATUS_TOPIC = String(MQTT_CONTROLLINO_PREFIX + "/status").c_str();
 
+void handleMQTTConnection();
 void publishToMQTT(const char *p_topic, char *p_payload);
 void subscribeToMQTT(const char *p_topic);
 void handleMQTTMessage(char *p_topic, byte *p_payload, unsigned int p_length);
@@ -131,7 +147,7 @@ void setup()
   xTaskCreate(
       TaskIOT, "IOT" // A name just for humans
       ,
-      1024 // This stack size can be checked & adjusted by reading the Stack Highwater
+      256 // This stack size can be checked & adjusted by reading the Stack Highwater
       ,
       NULL, 1 // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
       ,
@@ -197,42 +213,81 @@ void TaskIOT(void *pvParameters __attribute__((unused)))
   serializeJson(staticJsonDocument, stateOffJson);
 
   staticJsonDocument.clear();
+  staticJsonDocument["cmd_t"] = "~/set";
+  staticJsonDocument["stat_t"] = "~/state";
+  staticJsonDocument["schema"] = "json";
 
   mqttClient.setServer(MQTT_SERVER, MQTT_SERVER_PORT);
   mqttClient.setCallback(handleMQTTMessage);
+  mqttClient.setKeepAlive(60);
+  mqttClient.setSocketTimeout(60);
 
   for (;;)
   {
-    if (!mqttClient.connected())
-    {
-      if (lastMQTTConnection + MQTT_CONNECTION_TIMEOUT > xTaskGetTickCount())
-      {
-        if (mqttClient.connect(MQTT_CLIENT_ID, MQTT_USERNAME, MQTT_PASSWORD, MQTT_CONTROLLINO_CONFIG_TOPIC, 0, 1, "dead"))
-        {
-
-          mqttClient.publish(MQTT_CONTROLLINO_CONFIG_TOPIC, "alive", true);
-
-          for (auto &item : triggers)
-          {
-            // MQTT discovery for Home Assistant
-            publishToMQTT(item.getMqttConfigTopic(), item.getJsonConfig());
-            subscribeToMQTT(item.getMqttCommandTopic());
-          }
-        }
-        else
-        {
 #ifdef DEBUG
-          if (xSemaphoreTake(xSerialSemaphore, (TickType_t)5) == pdTRUE)
-          {
-            Serial.println("ERROR: The connection to the MQTT broker failed");
-            xSemaphoreGive(xSerialSemaphore);
-          }
+    if (xSemaphoreTake(xSerialSemaphore, (TickType_t)5) == pdTRUE)
+    {
+      Serial.println("INFO: Current client state: ");
+      Serial.println(mqttClient.state());
+      /*
+      // Possible values for client.state()
+      #define MQTT_CONNECTION_TIMEOUT     -4
+      #define MQTT_CONNECTION_LOST        -3
+      #define MQTT_CONNECT_FAILED         -2
+      #define MQTT_DISCONNECTED           -1
+      #define MQTT_CONNECTED               0
+      #define MQTT_CONNECT_BAD_PROTOCOL    1
+      #define MQTT_CONNECT_BAD_CLIENT_ID   2
+      #define MQTT_CONNECT_UNAVAILABLE     3
+      #define MQTT_CONNECT_BAD_CREDENTIALS 4
+      #define MQTT_CONNECT_UNAUTHORIZED    5
+      */
+      xSemaphoreGive(xSerialSemaphore);
+    }
 #endif
+
+    handleMQTTConnection();
+
+    mqttClient.loop();
+  }
+}
+
+void handleMQTTConnection()
+{
+  if (!mqttClient.connected())
+  {
+    if (lastMQTTConnection + MQTT_CONNECTION_TIMEOUT < xTaskGetTickCount()) {
+      if (mqttClient.connect(MQTT_CLIENT_ID.c_str(), MQTT_USERNAME, MQTT_PASSWORD, MQTT_CONTROLLINO_CONFIG_TOPIC, 0, 1, "dead"))
+      {
+
+        mqttClient.publish(MQTT_CONTROLLINO_CONFIG_TOPIC, "alive", true);
+
+        for (auto &item : triggers)
+        {
+          // MQTT discovery for Home Assistant
+          staticJsonDocument["~"] = item.getMqttPrefix();
+          staticJsonDocument["name"] = item.getName();
+          staticJsonDocument["unique_id"] = item.getId();
+          serializeJson(staticJsonDocument, jsonBuffer);
+          publishToMQTT(item.getMqttConfigTopic(), jsonBuffer);
+          subscribeToMQTT(item.getMqttCommandTopic());
         }
-        lastMQTTConnection = xTaskGetTickCount();
+      }
+      else
+      {
+#ifdef DEBUG
+        if (xSemaphoreTake(xSerialSemaphore, (TickType_t)5) == pdTRUE)
+        {
+          Serial.println("ERROR: The connection to the MQTT broker failed");
+          xSemaphoreGive(xSerialSemaphore);
+        }
+#endif
       }
     }
-
+    lastMQTTConnection = xTaskGetTickCount();
+  }
+  else
+  {
     for (auto &item : triggers)
     {
       if (item.isChanged())
@@ -250,8 +305,7 @@ void TaskIOT(void *pvParameters __attribute__((unused)))
         }
       }
     }
-
-    mqttClient.loop();
+    lastMQTTConnection = xTaskGetTickCount();
   }
 }
 
