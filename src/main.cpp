@@ -30,7 +30,7 @@
 #include <config.h>
 #include <semphr.h> // add the FreeRTOS functions for Semaphores (or Flags).
 
-#define DEBUG // uncomment to enable debug
+//#define DEBUG // uncomment to enable debug
 #define FLOOR 1
 
 // Declare a mutex Semaphore Handle which we will use to manage the Serial Port.
@@ -57,7 +57,7 @@ byte ETH_IP[] = {192, 168, 88, 16}; // ip in lan (that's what you need to use in
 #define MQTT_PASSWORD "mqtt_password"
 #define MQTT_SERVER "192.168.88.232"
 #define MQTT_SERVER_PORT 1883
-#define MQTT_TIMEOUT 30000
+long MQTT_TIMEOUT = 10000/portTICK_PERIOD_MS;
 
 #define MQTT_STATE_ON_PAYLOAD "ON"
 #define MQTT_STATE_OFF_PAYLOAD "OFF"
@@ -69,7 +69,7 @@ String MQTT_CLIENT_ID = "con_p1";
 #endif
 
 PubSubClient mqttClient(ethClient);
-long lastMQTTConnection = MQTT_TIMEOUT;
+long lastMQTTConnection;
 StaticJsonDocument<256> staticJsonDocument;
 char jsonBuffer[256];
 char stateOnJson[128];
@@ -88,30 +88,30 @@ void handleMQTTMessage(char *p_topic, byte *p_payload, unsigned int p_length);
 
 #if FLOOR == O
 Trigger triggers[] = {
-    Trigger(&button_A0, &light_R0, "Lavanderia", "p0_lavanderia"),   // Lavanderia
-    Trigger(&button_A2, &light_R1, "Laboratorio", "p0_laboratorio"), // Locale tecnico - Ipotizzato ingresso
-    Trigger(&button_A1, &light_R2, "Garage", "p0_garage"),           // Salone
-    Trigger(&button_A4, &light_R3, "Magazzino", "p0_magazzino"),     // Garage
-    Trigger(&button_A3, &light_R4, "Ingresso", "p0_ingresso"),       // Est. Porta
-    Trigger(&button_A5, &light_R5, "Gradini", "p0_gradini")          // Gradini
+    Trigger(&button_A0, &light_R0, "Lavanderia", "p0_T1"),   // Lavanderia
+    Trigger(&button_A2, &light_R1, "Laboratorio", "p0_T2"), // Locale tecnico - Ipotizzato ingresso
+    Trigger(&button_A1, &light_R2, "Garage", "p0_T3"),           // Salone
+    Trigger(&button_A4, &light_R3, "Magazzino", "p0_T4"),     // Garage
+    Trigger(&button_A3, &light_R4, "Ingresso", "p0_T5"),       // Est. Porta
+    Trigger(&button_A5, &light_R5, "Gradini", "p0_T6")          // Gradini
 };                                                                   // Luci esterne su A3
 #elif FLOOR == 1
 Trigger triggers[] = {
-    Trigger(&button_A5, &light_R0, "Ballatoio", "p1_ballatoio"),                 // Ballatoio
-    Trigger(&button_A14, &light_R1, "Esterno sala", "p1_est_sala"),              // Ext nord
-    Trigger(&button_A13, &light_R2, "Esterno cucina", "p1_est_cucina"),          // Ext cucina
-    Trigger(&button_A4, &light_R3, "Stanza Ema", "p1_stanza_ema"),               // Stanza 2 -- Ema
-    Trigger(&button_A12, &light_R4, "Cucina", "p1_cucina"),                      // Cucina
-    Trigger(&button_A8, &light_R5, "Stanza Gio", "p1_stanza_gio"),               // Stanza 3 -- Gio
-    Trigger(&button_A2, &light_R6, "Corridoio", "p1_corridoio"),                 // Corridoio
-    Trigger(&button_A9, &light_R5, "Esterno Gio", "p1_est_gio"),                 // Esterno 3 -- Gio --> default R7
-    Trigger(&button_A6, &light_R8, "Lavanderia", "p1_lavanderia"),               // Lavanderia
-    Trigger(&button_A7, &light_R9, "Bagno piccolo", "p1_bagno_piccolo"),         // Bagno piccolo
-    Trigger(&button_A11, &light_R10, "Sala", "p1_sala"),                         // Sala
-    Trigger(&button_A3, &light_R3, "Esterno Ema", "p1_est_ema"),                 // Esterno 2 - Ema --> default R11
-    Trigger(&button_A1, &light_R12, "Esterno camera da letto", "p1_est_camera"), // Esterno 1
-    Trigger(&button_A10, &light_R13, "Bagno", "p1_bagno"),                       // Bagno
-    Trigger(&button_A0, &light_R14, "Camera da letto", "p1_camera")              // Stanza 1
+    Trigger(&button_A5, &light_R0, "Ballatoio", "p1_T1"),                 // Ballatoio
+    Trigger(&button_A14, &light_R1, "Esterno sala", "p1_T2"),              // Ext nord
+    Trigger(&button_A13, &light_R2, "Esterno cucina", "p1_T3"),          // Ext cucina
+    Trigger(&button_A4, &light_R3, "Stanza Ema", "p1_T4"),               // Stanza 2 -- Ema
+    Trigger(&button_A12, &light_R4, "Cucina", "p1_T5"),                      // Cucina
+    Trigger(&button_A8, &light_R5, "Stanza Gio", "p1_T6"),               // Stanza 3 -- Gio
+    Trigger(&button_A2, &light_R6, "Corridoio", "p1_T7"),                 // Corridoio
+    Trigger(&button_A9, &light_R5, "Esterno Gio", "p1_T8"),                 // Esterno 3 -- Gio --> default R7
+    Trigger(&button_A6, &light_R8, "Lavanderia", "p1_T9"),               // Lavanderia
+    Trigger(&button_A7, &light_R9, "Bagno piccolo", "p1_T10"),         // Bagno piccolo
+    Trigger(&button_A11, &light_R10, "Sala", "p1_T11"),                         // Sala
+    Trigger(&button_A3, &light_R3, "Esterno Ema", "p1_T13"),                 // Esterno 2 - Ema --> default R11
+    Trigger(&button_A1, &light_R12, "Esterno camera", "p1_T14"), // Esterno 1
+    Trigger(&button_A10, &light_R13, "Bagno", "p1_T15"),                       // Bagno
+    Trigger(&button_A0, &light_R14, "Camera", "p1_T16")              // Stanza 1
 };
 #endif
 
@@ -214,8 +214,10 @@ void TaskIOT(void *pvParameters __attribute__((unused)))
 
   mqttClient.setServer(MQTT_SERVER, MQTT_SERVER_PORT);
   mqttClient.setCallback(handleMQTTMessage);
-  mqttClient.setKeepAlive(60);
-  mqttClient.setSocketTimeout(60);
+  mqttClient.setKeepAlive(30);
+  mqttClient.setSocketTimeout(30);
+
+  lastMQTTConnection = xTaskGetTickCount();
 
   for (;;)
   {
@@ -224,6 +226,7 @@ void TaskIOT(void *pvParameters __attribute__((unused)))
     {
       Serial.println("INFO: Current client state: ");
       Serial.println(mqttClient.state());
+      Serial.println(xTaskGetTickCount());
       /*
       // Possible values for client.state()
       #define MQTT_CONNECTION_TIMEOUT     -4
@@ -256,7 +259,7 @@ void handleMQTTConnection()
 {
   if (!mqttClient.connected())
   {
-    if (lastMQTTConnection + MQTT_CONNECTION_TIMEOUT < xTaskGetTickCount())
+    if ( MQTT_CONNECTION_TIMEOUT < xTaskGetTickCount() - lastMQTTConnection)
     {
       if (mqttClient.connect(MQTT_CLIENT_ID.c_str(), MQTT_USERNAME, MQTT_PASSWORD, MQTT_CONTROLLINO_CONFIG_TOPIC, 0, 1, "dead"))
       {
@@ -278,6 +281,9 @@ void handleMQTTConnection()
           subscribeToMQTT(item.getMqttCommandTopic());
 
         }
+
+
+    lastMQTTConnection = xTaskGetTickCount();
       }
       else
       {
@@ -290,7 +296,6 @@ void handleMQTTConnection()
 #endif
       }
     }
-    lastMQTTConnection = xTaskGetTickCount();
   }
   else
   {
