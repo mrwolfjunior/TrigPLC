@@ -31,7 +31,7 @@
 #include <semphr.h> // add the FreeRTOS functions for Semaphores (or Flags).
 
 #define DEBUG // uncomment to enable debug
-#define FLOOR 0
+#define FLOOR 1
 
 // Declare a mutex Semaphore Handle which we will use to manage the Serial Port.
 // It will be used to ensure only only one Task is accessing this resource at any time.
@@ -57,7 +57,7 @@ byte ETH_IP[] = {192, 168, 88, 16}; // ip in lan (that's what you need to use in
 #define MQTT_PASSWORD "mqtt_password"
 #define MQTT_SERVER "192.168.88.232"
 #define MQTT_SERVER_PORT 1883
-#define MQTT_TIMEOUT 20000
+#define MQTT_TIMEOUT 30000
 
 #define MQTT_STATE_ON_PAYLOAD "ON"
 #define MQTT_STATE_OFF_PAYLOAD "OFF"
@@ -81,9 +81,6 @@ const char *MQTT_CONTROLLINO_STATE_TOPIC = String(MQTT_CONTROLLINO_PREFIX + "/st
 const char *MQTT_CONTROLLINO_COMMAND_TOPIC = String(MQTT_CONTROLLINO_PREFIX + "/set").c_str();
 const char *MQTT_CONTROLLINO_STATUS_TOPIC = String(MQTT_CONTROLLINO_PREFIX + "/status").c_str();
 
-const char *getMqttConfigTopic(Trigger item);
-const char *getMqttStateTopic(Trigger item);
-const char *getMqttCommandTopic(Trigger item);
 void handleMQTTConnection();
 void publishToMQTT(const char *p_topic, char *p_payload);
 void subscribeToMQTT(const char *p_topic);
@@ -211,6 +208,10 @@ void TaskIOT(void *pvParameters __attribute__((unused)))
   staticJsonDocument["state"] = MQTT_STATE_OFF_PAYLOAD;
   serializeJson(staticJsonDocument, stateOffJson);
 
+  for(auto &item : triggers) {
+    item.setup_mqtt();
+  }
+
   mqttClient.setServer(MQTT_SERVER, MQTT_SERVER_PORT);
   mqttClient.setCallback(handleMQTTMessage);
   mqttClient.setKeepAlive(60);
@@ -273,8 +274,8 @@ void handleMQTTConnection()
           staticJsonDocument["name"] = item.getName();
           staticJsonDocument["unique_id"] = item.getId();
           serializeJson(staticJsonDocument, jsonBuffer);
-          publishToMQTT(getMqttConfigTopic(item), jsonBuffer);
-          subscribeToMQTT(getMqttCommandTopic(item));
+          publishToMQTT(item.getMqttConfigTopic(), jsonBuffer);
+          subscribeToMQTT(item.getMqttCommandTopic());
 
         }
       }
@@ -300,10 +301,10 @@ void handleMQTTConnection()
         switch (item.getState())
         {
         case LOW:
-          publishToMQTT(getMqttStateTopic(item), stateOffJson);
+          publishToMQTT(item.getMqttStateTopic(), stateOffJson);
           break;
         case HIGH:
-          publishToMQTT(getMqttStateTopic(item), stateOnJson);
+          publishToMQTT(item.getMqttStateTopic(), stateOnJson);
           break;
         default:
           break;
@@ -311,21 +312,6 @@ void handleMQTTConnection()
       }
     }
   }
-}
-
-const char *getMqttConfigTopic(Trigger item)
-{
-  return String(MQTT_LIGHT_PREFIX + item.getId() + "/config").c_str();
-}
-
-const char *getMqttStateTopic(Trigger item)
-{
-  return String(MQTT_LIGHT_PREFIX + item.getId() + "/state").c_str();
-}
-
-const char *getMqttCommandTopic(Trigger item)
-{
-  return String(MQTT_LIGHT_PREFIX + item.getId() + "/set").c_str();
 }
 
 void publishToMQTT(const char *p_topic, char *p_payload)
@@ -409,7 +395,7 @@ void handleMQTTMessage(char *p_topic, byte *p_payload, unsigned int p_length)
 
   for (auto &item : triggers)
   {
-    if (String(getMqttCommandTopic(item)).equals(p_topic))
+    if (String(item.getMqttCommandTopic()).equals(p_topic))
     {
       staticJsonDocument.clear();
       auto error = deserializeJson(staticJsonDocument, p_payload);
@@ -440,7 +426,7 @@ void handleMQTTMessage(char *p_topic, byte *p_payload, unsigned int p_length)
         }
         serializeJson(staticJsonDocument, jsonBuffer);
 
-        publishToMQTT(getMqttStateTopic(item), jsonBuffer);
+        publishToMQTT(item.getMqttStateTopic(), jsonBuffer);
       }
 
       break;
