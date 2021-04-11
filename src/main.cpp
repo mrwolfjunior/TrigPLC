@@ -31,7 +31,7 @@
 #include <semphr.h> // add the FreeRTOS functions for Semaphores (or Flags).
 
 #define DEBUG // uncomment to enable debug
-#define FLOOR 1
+#define FLOOR 0
 
 // Declare a mutex Semaphore Handle which we will use to manage the Serial Port.
 // It will be used to ensure only only one Task is accessing this resource at any time.
@@ -72,14 +72,18 @@ PubSubClient mqttClient(ethClient);
 long lastMQTTConnection = MQTT_TIMEOUT;
 StaticJsonDocument<256> staticJsonDocument;
 char jsonBuffer[256];
-char stateOnJson[256];
-char stateOffJson[256];
+char stateOnJson[128];
+char stateOffJson[128];
 String MQTT_CONTROLLINO_PREFIX = "homeassistant/light/controllino_p" + FLOOR;
+String MQTT_LIGHT_PREFIX = "homeassistant/light/";
 const char *MQTT_CONTROLLINO_CONFIG_TOPIC = String(MQTT_CONTROLLINO_PREFIX + "/config").c_str();
 const char *MQTT_CONTROLLINO_STATE_TOPIC = String(MQTT_CONTROLLINO_PREFIX + "/state").c_str();
 const char *MQTT_CONTROLLINO_COMMAND_TOPIC = String(MQTT_CONTROLLINO_PREFIX + "/set").c_str();
 const char *MQTT_CONTROLLINO_STATUS_TOPIC = String(MQTT_CONTROLLINO_PREFIX + "/status").c_str();
 
+const char *getMqttConfigTopic(Trigger item);
+const char *getMqttStateTopic(Trigger item);
+const char *getMqttCommandTopic(Trigger item);
 void handleMQTTConnection();
 void publishToMQTT(const char *p_topic, char *p_payload);
 void subscribeToMQTT(const char *p_topic);
@@ -179,7 +183,6 @@ void TaskTrigger(void *pvParameters __attribute__((unused)))
 
 void TaskIOT(void *pvParameters __attribute__((unused)))
 {
-
   Ethernet.begin(ETH_MAC, ETH_IP, ETH_GATEWAY, ETH_SUBNET);
   vTaskDelay(1);
 
@@ -202,20 +205,11 @@ void TaskIOT(void *pvParameters __attribute__((unused)))
     vTaskDelay(60000 / portTICK_PERIOD_MS); // Ethernet cable is not connected. Wait until cable is connected
   }
 
-  for (auto &item : triggers)
-  {
-    item.setup_mqtt();
-  }
-
+  staticJsonDocument.clear();
   staticJsonDocument["state"] = MQTT_STATE_ON_PAYLOAD;
   serializeJson(staticJsonDocument, stateOnJson);
   staticJsonDocument["state"] = MQTT_STATE_OFF_PAYLOAD;
   serializeJson(staticJsonDocument, stateOffJson);
-
-  staticJsonDocument.clear();
-  staticJsonDocument["cmd_t"] = "~/set";
-  staticJsonDocument["stat_t"] = "~/state";
-  staticJsonDocument["schema"] = "json";
 
   mqttClient.setServer(MQTT_SERVER, MQTT_SERVER_PORT);
   mqttClient.setCallback(handleMQTTMessage);
@@ -242,6 +236,11 @@ void TaskIOT(void *pvParameters __attribute__((unused)))
       #define MQTT_CONNECT_BAD_CREDENTIALS 4
       #define MQTT_CONNECT_UNAUTHORIZED    5
       */
+
+     /*
+     Return the highwatermart --> on a 8 bit architecture 1 indicate that 1 byte is used
+     */
+     Serial.println(uxTaskGetStackHighWaterMark(NULL));
       xSemaphoreGive(xSerialSemaphore);
     }
 #endif
@@ -256,7 +255,8 @@ void handleMQTTConnection()
 {
   if (!mqttClient.connected())
   {
-    if (lastMQTTConnection + MQTT_CONNECTION_TIMEOUT < xTaskGetTickCount()) {
+    if (lastMQTTConnection + MQTT_CONNECTION_TIMEOUT < xTaskGetTickCount())
+    {
       if (mqttClient.connect(MQTT_CLIENT_ID.c_str(), MQTT_USERNAME, MQTT_PASSWORD, MQTT_CONTROLLINO_CONFIG_TOPIC, 0, 1, "dead"))
       {
 
@@ -265,12 +265,17 @@ void handleMQTTConnection()
         for (auto &item : triggers)
         {
           // MQTT discovery for Home Assistant
-          staticJsonDocument["~"] = item.getMqttPrefix();
+          staticJsonDocument.clear();
+          staticJsonDocument["cmd_t"] = "~/set";
+          staticJsonDocument["stat_t"] = "~/state";
+          staticJsonDocument["schema"] = "json";
+          staticJsonDocument["~"] = MQTT_LIGHT_PREFIX + item.getId();
           staticJsonDocument["name"] = item.getName();
           staticJsonDocument["unique_id"] = item.getId();
           serializeJson(staticJsonDocument, jsonBuffer);
-          publishToMQTT(item.getMqttConfigTopic(), jsonBuffer);
-          subscribeToMQTT(item.getMqttCommandTopic());
+          publishToMQTT(getMqttConfigTopic(item), jsonBuffer);
+          subscribeToMQTT(getMqttCommandTopic(item));
+
         }
       }
       else
@@ -295,18 +300,32 @@ void handleMQTTConnection()
         switch (item.getState())
         {
         case LOW:
-          publishToMQTT(item.getMqttStateopic(), stateOffJson);
+          publishToMQTT(getMqttStateTopic(item), stateOffJson);
           break;
         case HIGH:
-          publishToMQTT(item.getMqttStateopic(), stateOnJson);
+          publishToMQTT(getMqttStateTopic(item), stateOnJson);
           break;
         default:
           break;
         }
       }
     }
-    lastMQTTConnection = xTaskGetTickCount();
   }
+}
+
+const char *getMqttConfigTopic(Trigger item)
+{
+  return String(MQTT_LIGHT_PREFIX + item.getId() + "/config").c_str();
+}
+
+const char *getMqttStateTopic(Trigger item)
+{
+  return String(MQTT_LIGHT_PREFIX + item.getId() + "/state").c_str();
+}
+
+const char *getMqttCommandTopic(Trigger item)
+{
+  return String(MQTT_LIGHT_PREFIX + item.getId() + "/set").c_str();
 }
 
 void publishToMQTT(const char *p_topic, char *p_payload)
@@ -390,10 +409,10 @@ void handleMQTTMessage(char *p_topic, byte *p_payload, unsigned int p_length)
 
   for (auto &item : triggers)
   {
-    if (String(item.getMqttCommandTopic()).equals(p_topic))
+    if (String(getMqttCommandTopic(item)).equals(p_topic))
     {
-      DynamicJsonDocument doc(1024);
-      auto error = deserializeJson(doc, p_payload);
+      staticJsonDocument.clear();
+      auto error = deserializeJson(staticJsonDocument, p_payload);
       if (error)
       {
 
@@ -409,19 +428,19 @@ void handleMQTTMessage(char *p_topic, byte *p_payload, unsigned int p_length)
         return;
       }
 
-      if (doc.containsKey("state"))
+      if (staticJsonDocument.containsKey("state"))
       {
-        if (strcmp(doc["state"], MQTT_STATE_ON_PAYLOAD) == 0)
+        if (strcmp(staticJsonDocument["state"], MQTT_STATE_ON_PAYLOAD) == 0)
         {
           item.setState(HIGH);
         }
-        else if (strcmp(doc["state"], MQTT_STATE_OFF_PAYLOAD) == 0)
+        else if (strcmp(staticJsonDocument["state"], MQTT_STATE_OFF_PAYLOAD) == 0)
         {
           item.setState(LOW);
         }
-        serializeJson(doc, jsonBuffer);
+        serializeJson(staticJsonDocument, jsonBuffer);
 
-        publishToMQTT(item.getMqttStateopic(), jsonBuffer);
+        publishToMQTT(getMqttStateTopic(item), jsonBuffer);
       }
 
       break;
