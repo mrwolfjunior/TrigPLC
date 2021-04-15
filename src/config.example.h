@@ -18,3 +18,7 @@ byte ETH_GATEWAY[] = {192, 168, 1, 1};                // internet access via rou
 byte ETH_SUBNET[] = {255, 255, 255, 0};               //subnet mask
 byte ETH_IP[] = {192, 168, 1, 3};                     // ip in lan (that's what you need to use in your browser. ("192.168.1.178")
 
+Trigger triggers[] = {
+    Trigger(&button_A0, &light_R0, "Room 1", "p0_R1"),   // Lavanderia
+    Trigger(&button_A2, &light_R1, "Room 2", "p0_R2")   // Locale tecnico - Ipotizzato ingresso
+}; 
