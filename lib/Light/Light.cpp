@@ -21,3 +21,7 @@ int Light::triggerLight(void) {
 	setState(!state);
 	return state;
 }
+
+int Light::getState(void) {
+	return state;
+}

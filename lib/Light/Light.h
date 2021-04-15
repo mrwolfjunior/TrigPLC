@@ -13,6 +13,7 @@ class Light
                 void setup(void);
                 void setState(int newState);
                 int triggerLight(void);
+                int getState(void);
 };
 
 #endif
