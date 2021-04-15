@@ -30,8 +30,6 @@
 #include <config.h>
 #include <semphr.h> // add the FreeRTOS functions for Semaphores (or Flags).
 
-//#define DEBUG // uncomment to enable debug
-#define FLOOR 1
 
 // Declare a mutex Semaphore Handle which we will use to manage the Serial Port.
 // It will be used to ensure only only one Task is accessing this resource at any time.
@@ -43,30 +41,7 @@ void TaskIOT(void *pvParameters);
 TaskHandle_t TaskIOTHandle; // handler for TaskIOT
 
 EthernetClient ethClient;
-// Ethernet variable
-byte ETH_MAC[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED}; //physical mac address
-byte ETH_GATEWAY[] = {192, 168, 88, 1};                // internet access via router
-byte ETH_SUBNET[] = {255, 255, 255, 0};                //subnet mask
-#if FLOOR == 0
-byte ETH_IP[] = {192, 168, 88, 15}; // ip in lan (that's what you need to use in your browser. ("192.168.1.178")
-#elif FLOOR == 1
-byte ETH_IP[] = {192, 168, 88, 16}; // ip in lan (that's what you need to use in your browser. ("192.168.1.178")
-#endif
-
-#define MQTT_USERNAME "mqtt_user"
-#define MQTT_PASSWORD "mqtt_password"
-#define MQTT_SERVER "192.168.88.232"
-#define MQTT_SERVER_PORT 1883
 long MQTT_TIMEOUT = 10000/portTICK_PERIOD_MS;
-
-#define MQTT_STATE_ON_PAYLOAD "ON"
-#define MQTT_STATE_OFF_PAYLOAD "OFF"
-
-#if FLOOR == 0
-String MQTT_CLIENT_ID = "con_p0";
-#elif FLOOR == 1
-String MQTT_CLIENT_ID = "con_p1";
-#endif
 
 PubSubClient mqttClient(ethClient);
 long lastMQTTConnection;
@@ -74,17 +49,12 @@ StaticJsonDocument<256> staticJsonDocument;
 char jsonBuffer[256];
 char stateOnJson[128];
 char stateOffJson[128];
-String MQTT_CONTROLLINO_PREFIX = "homeassistant/light/controllino_p" + FLOOR;
-String MQTT_LIGHT_PREFIX = "homeassistant/light/";
-const char *MQTT_CONTROLLINO_CONFIG_TOPIC = String(MQTT_CONTROLLINO_PREFIX + "/config").c_str();
-const char *MQTT_CONTROLLINO_STATE_TOPIC = String(MQTT_CONTROLLINO_PREFIX + "/state").c_str();
-const char *MQTT_CONTROLLINO_COMMAND_TOPIC = String(MQTT_CONTROLLINO_PREFIX + "/set").c_str();
-const char *MQTT_CONTROLLINO_STATUS_TOPIC = String(MQTT_CONTROLLINO_PREFIX + "/status").c_str();
 
 void handleMQTTConnection();
 void publishToMQTT(const char *p_topic, char *p_payload);
 void subscribeToMQTT(const char *p_topic);
 void handleMQTTMessage(char *p_topic, byte *p_payload, unsigned int p_length);
+
 
 #if FLOOR == O
 Trigger triggers[] = {
@@ -97,21 +67,21 @@ Trigger triggers[] = {
 };                                                                   // Luci esterne su A3
 #elif FLOOR == 1
 Trigger triggers[] = {
-    Trigger(&button_A5, &light_R0, "Ballatoio", "p1_T1"),                 // Ballatoio
-    Trigger(&button_A14, &light_R1, "Esterno sala", "p1_T2"),              // Ext nord
-    Trigger(&button_A13, &light_R2, "Esterno cucina", "p1_T3"),          // Ext cucina
-    Trigger(&button_A4, &light_R3, "Stanza Ema", "p1_T4"),               // Stanza 2 -- Ema
-    Trigger(&button_A12, &light_R4, "Cucina", "p1_T5"),                      // Cucina
-    Trigger(&button_A8, &light_R5, "Stanza Gio", "p1_T6"),               // Stanza 3 -- Gio
-    Trigger(&button_A2, &light_R6, "Corridoio", "p1_T7"),                 // Corridoio
-    Trigger(&button_A9, &light_R5, "Esterno Gio", "p1_T8"),                 // Esterno 3 -- Gio --> default R7
-    Trigger(&button_A6, &light_R8, "Lavanderia", "p1_T9"),               // Lavanderia
-    Trigger(&button_A7, &light_R9, "Bagno piccolo", "p1_T10"),         // Bagno piccolo
-    Trigger(&button_A11, &light_R10, "Sala", "p1_T11"),                         // Sala
-    Trigger(&button_A3, &light_R3, "Esterno Ema", "p1_T13"),                 // Esterno 2 - Ema --> default R11
+    Trigger(&button_A5, &light_R0, "Ballatoio", "p1_T1"),        // Ballatoio
+    Trigger(&button_A14, &light_R1, "Esterno sala", "p1_T2"),    // Ext nord
+    Trigger(&button_A13, &light_R2, "Esterno cucina", "p1_T3"),  // Ext cucina
+    Trigger(&button_A4, &light_R3, "Stanza Ema", "p1_T4"),       // Stanza 2 -- Ema
+    Trigger(&button_A12, &light_R4, "Cucina", "p1_T5"),          // Cucina
+    Trigger(&button_A8, &light_R5, "Stanza Gio", "p1_T6"),       // Stanza 3 -- Gio
+    Trigger(&button_A2, &light_R6, "Corridoio", "p1_T7"),        // Corridoio
+    Trigger(&button_A9, &light_R5, "Esterno Gio", "p1_T8"),      // Esterno 3 -- Gio --> default R7
+    Trigger(&button_A6, &light_R8, "Lavanderia", "p1_T9"),       // Lavanderia
+    Trigger(&button_A7, &light_R9, "Bagno piccolo", "p1_T10"),   // Bagno piccolo
+    Trigger(&button_A11, &light_R10, "Sala", "p1_T11"),          // Sala
+    Trigger(&button_A3, &light_R3, "Esterno Ema", "p1_T13"),     // Esterno 2 - Ema --> default R11
     Trigger(&button_A1, &light_R12, "Esterno camera", "p1_T14"), // Esterno 1
-    Trigger(&button_A10, &light_R13, "Bagno", "p1_T15"),                       // Bagno
-    Trigger(&button_A0, &light_R14, "Camera", "p1_T16")              // Stanza 1
+    Trigger(&button_A10, &light_R13, "Bagno", "p1_T15"),         // Bagno
+    Trigger(&button_A0, &light_R14, "Camera", "p1_T16")          // Stanza 1
 };
 #endif
 
