@@ -55,36 +55,6 @@ void publishToMQTT(const char *p_topic, char *p_payload);
 void subscribeToMQTT(const char *p_topic);
 void handleMQTTMessage(char *p_topic, byte *p_payload, unsigned int p_length);
 
-
-#if FLOOR == O
-Trigger triggers[] = {
-    Trigger(&button_A0, &light_R0, "Lavanderia", "p0_T1"),   // Lavanderia
-    Trigger(&button_A2, &light_R1, "Laboratorio", "p0_T2"), // Locale tecnico - Ipotizzato ingresso
-    Trigger(&button_A1, &light_R2, "Garage", "p0_T3"),           // Salone
-    Trigger(&button_A4, &light_R3, "Magazzino", "p0_T4"),     // Garage
-    Trigger(&button_A3, &light_R4, "Ingresso", "p0_T5"),       // Est. Porta
-    Trigger(&button_A5, &light_R5, "Gradini", "p0_T6")          // Gradini
-};                                                                   // Luci esterne su A3
-#elif FLOOR == 1
-Trigger triggers[] = {
-    Trigger(&button_A5, &light_R0, "Ballatoio", "p1_T1"),        // Ballatoio
-    Trigger(&button_A14, &light_R1, "Esterno sala", "p1_T2"),    // Ext nord
-    Trigger(&button_A13, &light_R2, "Esterno cucina", "p1_T3"),  // Ext cucina
-    Trigger(&button_A4, &light_R3, "Stanza Ema", "p1_T4"),       // Stanza 2 -- Ema
-    Trigger(&button_A12, &light_R4, "Cucina", "p1_T5"),          // Cucina
-    Trigger(&button_A8, &light_R5, "Stanza Gio", "p1_T6"),       // Stanza 3 -- Gio
-    Trigger(&button_A2, &light_R6, "Corridoio", "p1_T7"),        // Corridoio
-    Trigger(&button_A9, &light_R5, "Esterno Gio", "p1_T8"),      // Esterno 3 -- Gio --> default R7
-    Trigger(&button_A6, &light_R8, "Lavanderia", "p1_T9"),       // Lavanderia
-    Trigger(&button_A7, &light_R9, "Bagno piccolo", "p1_T10"),   // Bagno piccolo
-    Trigger(&button_A11, &light_R10, "Sala", "p1_T11"),          // Sala
-    Trigger(&button_A3, &light_R3, "Esterno Ema", "p1_T13"),     // Esterno 2 - Ema --> default R11
-    Trigger(&button_A1, &light_R12, "Esterno camera", "p1_T14"), // Esterno 1
-    Trigger(&button_A10, &light_R13, "Bagno", "p1_T15"),         // Bagno
-    Trigger(&button_A0, &light_R14, "Camera", "p1_T16")          // Stanza 1
-};
-#endif
-
 void setup()
 {
 
