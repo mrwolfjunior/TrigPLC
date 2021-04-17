@@ -1,4 +1,20 @@
-# TrigPLC
+<p align="center">
+  <h1 align="center">TrigPLC</h1>
+  <p align="center">TrigPLC allows to <b>integrate</b> a Controllino device with Home Assistant using MQTT.<p>
+  <p align="center">
+    <a href="https://github.com/mrwolfjunior/TrigPLC/blob/master/LICENSE">
+      <img src="https://img.shields.io/badge/license-GPLv3-blue.svg" />
+    </a>
+    <a href="https://www.arduino.cc">
+    	<img src="https://img.shields.io/badge/built%20with-Arduino-green.svg" />
+    </a>
+    <a href="https://www.controllino.com">
+    	<img src="https://img.shields.io/badge/built%20with-Controllino-green.svg" />
+    </a>
+  </p>
+</p>
+
+# Features
 
 This repo is my Controllino firmware for home automation
 
