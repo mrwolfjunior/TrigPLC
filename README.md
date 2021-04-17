@@ -1,4 +1,5 @@
 <p align="center">
+  <img src="./assets/light-switch.svg" width="154">
   <h1 align="center">TrigPLC</h1>
   <p align="center">TrigPLC allows to <b>integrate</b> a Controllino device with Home Assistant using MQTT.<p>
   <p align="center">
@@ -6,10 +7,10 @@
       <img src="https://img.shields.io/badge/license-GPLv3-blue.svg" />
     </a>
     <a href="https://www.arduino.cc">
-    	<img src="https://img.shields.io/badge/built%20with-Arduino-green.svg" />
+    	<img src="https://img.shields.io/badge/built%20for-Arduino-green.svg" />
     </a>
     <a href="https://www.controllino.com">
-    	<img src="https://img.shields.io/badge/built%20with-Controllino-green.svg" />
+    	<img src="https://img.shields.io/badge/built%20for-Controllino-green.svg" />
     </a>
   </p>
 </p>
@@ -41,3 +42,7 @@ For further information about freertos library please check [FreeRTOS website](h
 # Notes
 
 If you intend to modify the FreeRTOS tasks make sure to adjust properly the stack size for each task.
+
+<p align="center">
+<div>Icons made by <a href="https://www.flaticon.com/authors/pixel-perfect" title="Pixel perfect">Pixel perfect</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
+</p>
