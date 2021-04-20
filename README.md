@@ -41,6 +41,15 @@ I do like task management based on FreeRTOS, thus I have created two independent
 
 For further information about freertos library please check [FreeRTOS website](https://www.freertos.org/)
 
+# Instructions
+
+1. Clone the repo
+2. Create a new project on PlatformIO and add the repo folder
+3. Customize TrigPLC/src/config.h
+5. Build and flash the board
+
+Please make sure to adjust properly the stack size for each task.
+
 # Notes
 
 If you intend to modify the FreeRTOS tasks make sure to adjust properly the stack size for each task.
