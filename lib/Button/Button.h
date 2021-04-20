@@ -10,8 +10,22 @@ class Button
                 int currentState;
                 int lastState;
         public:
+                /**
+                 * @brief Construct a new Button object
+                 * 
+                 * @param pin Button pin
+                 */
                 Button(int pin);
+                /**
+                 * @brief Function to be called in the setup function
+                 * 
+                 */
                 void setup(void);
+                /**
+                 * @brief Function that check if button is pressed
+                 * 
+                 * @return boolean
+                 */
                 boolean isPressed(void);
 };
 
