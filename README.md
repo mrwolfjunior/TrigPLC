@@ -21,8 +21,10 @@ This repo is my Controllino firmware for home automation
 
 Current feature:
 
-- Home assistant integration with auto discovery
-- FreeRTOS integration
+- [x] Home assistant integration with auto discovery
+- [x] FreeRTOS integration
+- [ ] Multiple press (eg. double press --> 2 lights)
+- [ ] OTA update 
 
 # Brief introduction
 
