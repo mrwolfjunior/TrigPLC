@@ -23,7 +23,7 @@ Current feature:
 
 - [x] Home assistant integration with auto discovery
 - [x] FreeRTOS integration
-- [ ] Multiple press (eg. double press --> 2 lights)
+- [ ] Multiple press on single button (eg. double press --> 2 lights)
 - [ ] OTA update 
 
 # Brief introduction
@@ -49,6 +49,17 @@ For further information about freertos library please check [FreeRTOS website](h
 5. Build and flash the board
 
 Please make sure to adjust properly the stack size for each task.
+
+## Control multiple lights from multiple buttons
+
+If you want to control multiple lights from multiple buttons simply add one Trigger for each button / light couple. 
+
+Example - two buttons control 1 light:
+
+    Trigger(&button_A4, &light_R3, "Light 1", "p1_T4"),       // Light 1 - button 1
+    Trigger(&button_A3, &light_R3, "", "p1_T4"),              // Light 1 - button 2
+
+NOTE: Make sure to set a friendly name only for the first Trigger (in the above example "Light 1"), for the others button that manage the same light you must set an empty string.
 
 # Notes
 
