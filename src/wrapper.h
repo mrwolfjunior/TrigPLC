@@ -18,6 +18,7 @@ Button button_A11 (CONTROLLINO_A11);
 Button button_A12 (CONTROLLINO_A12);
 Button button_A13 (CONTROLLINO_A13);
 Button button_A14 (CONTROLLINO_A14);
+Button * button_null;
 
 Light light_R0(CONTROLLINO_R0);
 Light light_R1(CONTROLLINO_R1);
