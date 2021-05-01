@@ -11,17 +11,20 @@ Trigger::Trigger(Button * button, Light * light, String name, String id) {
 }
 
 void Trigger::setup(void) {
-	button->setup();
+	if(button) {
+		button->setup();
+	}
 	light->setup();
 	return;
 }
 
 void Trigger::loop(void) {
-	if(button->isPressed() == true) {
-		light->triggerLight();
-		isChangedFlag = true;
+	if(button){
+		if(button->isPressed() == true) {
+			light->triggerLight();
+			isChangedFlag = true;
+		}
 	}
-
 	return;
 }
 
