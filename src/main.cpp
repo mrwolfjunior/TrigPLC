@@ -6,7 +6,6 @@
 #include <config.h>
 #include <semphr.h> // add the FreeRTOS functions for Semaphores (or Flags).
 
-
 // Declare a mutex Semaphore Handle which we will use to manage the Serial Port.
 // It will be used to ensure only only one Task is accessing this resource at any time.
 SemaphoreHandle_t xSerialSemaphore;
@@ -17,7 +16,7 @@ void TaskIOT(void *pvParameters);
 TaskHandle_t TaskIOTHandle; // handler for TaskIOT
 
 EthernetClient ethClient;
-long MQTT_TIMEOUT = 10000/portTICK_PERIOD_MS;
+long MQTT_TIMEOUT = 10000 / portTICK_PERIOD_MS;
 
 PubSubClient mqttClient(ethClient);
 long lastMQTTConnection;
@@ -124,7 +123,8 @@ void TaskIOT(void *pvParameters __attribute__((unused)))
   staticJsonDocument["state"] = MQTT_STATE_OFF_PAYLOAD;
   serializeJson(staticJsonDocument, stateOffJson);
 
-  for(auto &item : triggers) {
+  for (auto &item : triggers)
+  {
     item.setup_mqtt();
   }
 
@@ -157,10 +157,10 @@ void TaskIOT(void *pvParameters __attribute__((unused)))
       #define MQTT_CONNECT_UNAUTHORIZED    5
       */
 
-     /*
+      /*
      Return the highwatermart --> on a 8 bit architecture 1 indicate that 1 byte is used
      */
-     Serial.println(uxTaskGetStackHighWaterMark(NULL));
+      Serial.println(uxTaskGetStackHighWaterMark(NULL));
       xSemaphoreGive(xSerialSemaphore);
     }
 #endif
@@ -175,7 +175,7 @@ void handleMQTTConnection()
 {
   if (!mqttClient.connected())
   {
-    if ( MQTT_CONNECTION_TIMEOUT < xTaskGetTickCount() - lastMQTTConnection)
+    if (MQTT_CONNECTION_TIMEOUT < xTaskGetTickCount() - lastMQTTConnection)
     {
       if (mqttClient.connect(MQTT_CLIENT_ID.c_str(), MQTT_USERNAME, MQTT_PASSWORD, MQTT_CONTROLLINO_CONFIG_TOPIC, 0, 1, "dead"))
       {
@@ -184,22 +184,24 @@ void handleMQTTConnection()
 
         for (auto &item : triggers)
         {
-          // MQTT discovery for Home Assistant
-          staticJsonDocument.clear();
-          staticJsonDocument["cmd_t"] = "~/set";
-          staticJsonDocument["stat_t"] = "~/state";
-          staticJsonDocument["schema"] = "json";
-          staticJsonDocument["~"] = MQTT_LIGHT_PREFIX + item.getId();
-          staticJsonDocument["name"] = item.getName();
-          staticJsonDocument["unique_id"] = item.getId();
-          serializeJson(staticJsonDocument, jsonBuffer);
-          publishToMQTT(item.getMqttConfigTopic(), jsonBuffer);
-          subscribeToMQTT(item.getMqttCommandTopic());
+          if (item.getName().length() != 0)
+          {
 
+            // MQTT discovery for Home Assistant
+            staticJsonDocument.clear();
+            staticJsonDocument["cmd_t"] = "~/set";
+            staticJsonDocument["stat_t"] = "~/state";
+            staticJsonDocument["schema"] = "json";
+            staticJsonDocument["~"] = MQTT_LIGHT_PREFIX + item.getId();
+            staticJsonDocument["name"] = item.getName();
+            staticJsonDocument["unique_id"] = item.getId();
+            serializeJson(staticJsonDocument, jsonBuffer);
+            publishToMQTT(item.getMqttConfigTopic(), jsonBuffer);
+            subscribeToMQTT(item.getMqttCommandTopic());
+          }
         }
 
-
-    lastMQTTConnection = xTaskGetTickCount();
+        lastMQTTConnection = xTaskGetTickCount();
       }
       else
       {
