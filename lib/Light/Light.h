@@ -8,6 +8,7 @@ class Light
 	private:
                 uint8_t pin;
                 int state;
+                bool initFlag;
         public:
                 /**
                  * @brief Construct a new Light object

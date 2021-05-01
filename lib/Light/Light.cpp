@@ -3,11 +3,16 @@
 Light::Light(int pin) {
 	this->pin = pin;
 	state = LOW;
+	initFlag = false;
+	return;
 }
 
 void Light::setup(void) {
 	// init hardware
-    pinMode(pin, OUTPUT);
+	if(initFlag == false){
+    	pinMode(pin, OUTPUT);
+		initFlag = true;
+	}
     return;
 }
 
