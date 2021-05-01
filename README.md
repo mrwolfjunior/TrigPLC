@@ -59,7 +59,7 @@ Example - two buttons control 1 light:
     Trigger(&button_A4, &light_R3, "Light 1", "p1_T4"),       // Light 1 - button 1
     Trigger(&button_A3, &light_R3, "", "p1_T4"),              // Light 1 - button 2
 
-NOTE: Make sure to set a friendly name only for the first Trigger (in the above example "Light 1"), for the others button that manage the same light you must set an empty string.
+NOTE: Make sure to set a friendly name only for the first Trigger (in the above example "Light 1"), for the others button that manage the same light you must set an empty string. The unique id must be the same, because from a mqtt prospective they represent the same entity.
 
 # Notes
 
