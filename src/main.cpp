@@ -63,7 +63,7 @@ void setup()
   xTaskCreate(
       TaskIOT, "IOT" // A name just for humans
       ,
-      256 // This stack size can be checked & adjusted by reading the Stack Highwater
+      512 // This stack size can be checked & adjusted by reading the Stack Highwater
       ,
       NULL, 1 // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
       ,
@@ -192,7 +192,7 @@ void handleMQTTConnection()
             staticJsonDocument["cmd_t"] = "~/set";
             staticJsonDocument["stat_t"] = "~/state";
             staticJsonDocument["schema"] = "json";
-            staticJsonDocument["~"] = MQTT_LIGHT_PREFIX + item.getId();
+            staticJsonDocument["~"] = item.getMqttPrefix();
             staticJsonDocument["name"] = item.getName();
             staticJsonDocument["unique_id"] = item.getId();
             serializeJson(staticJsonDocument, jsonBuffer);

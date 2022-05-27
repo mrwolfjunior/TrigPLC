@@ -14,6 +14,7 @@ class Trigger
                 bool isChangedFlag;
                 String name;
                 String id;
+                String type;
                 String MQTT_PREFIX;
                 String MQTT_CONFIG_TOPIC;
                 String MQTT_STATE_TOPIC;
@@ -28,7 +29,7 @@ class Trigger
                  * @param name Friendly name
                  * @param id unique id for MQTT
                  */
-                Trigger(Button * button, Light * light, String name, String id);
+                Trigger(Button * button, Light * light, String name, String id, String type);
                 /**
                  * @brief Function to be called in the setup function
                  * 

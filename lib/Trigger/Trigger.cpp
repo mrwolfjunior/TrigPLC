@@ -1,12 +1,13 @@
 #include <Trigger.h>
 
-Trigger::Trigger(Button * button, Light * light, String name, String id) {
+Trigger::Trigger(Button * button, Light * light, String name, String id, String type) {
 	this->button = button;
 	this->light = light;
 	this->name = name;
 	this->id = id;
+	this->type = type;
 	isChangedFlag = false;
-	MQTT_PREFIX = "homeassistant/light/" + id;
+	MQTT_PREFIX = "ha/" + type + "/" + id;
 	return;
 }
 

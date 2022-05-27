@@ -9,6 +9,7 @@ class Button
                 uint8_t pin;
                 int currentState;
                 int lastState;
+                bool initFlag;
         public:
                 /**
                  * @brief Construct a new Button object

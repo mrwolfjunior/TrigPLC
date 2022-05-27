@@ -2,6 +2,7 @@
 #include <Light.h>
 #include <Trigger.h>
 #include <Controllino.h>
+#define VIRTUAL_PIN -1
 
 Button button_A0 (CONTROLLINO_A0);
 Button button_A1 (CONTROLLINO_A1);
@@ -35,3 +36,4 @@ Light light_R11(CONTROLLINO_R11);
 Light light_R12(CONTROLLINO_R12);
 Light light_R13(CONTROLLINO_R13);
 Light light_R14(CONTROLLINO_R14);
+Light light_null(VIRTUAL_PIN);

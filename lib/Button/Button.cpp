@@ -8,7 +8,11 @@ Button::Button(int pin)
 void Button::setup(void)
 {
 	// init hardware
-	pinMode(pin, INPUT);
+	if (initFlag == false)
+	{
+		pinMode(pin, INPUT);
+		initFlag == true;
+	}
 
 	// init private variables
 	lastState = digitalRead(pin);

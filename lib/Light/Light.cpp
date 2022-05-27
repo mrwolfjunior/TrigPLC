@@ -10,7 +10,9 @@ Light::Light(int pin) {
 void Light::setup(void) {
 	// init hardware
 	if(initFlag == false){
-    	pinMode(pin, OUTPUT);
+		if(pin > 0) {
+			pinMode(pin, OUTPUT);
+		}
 		initFlag = true;
 	}
     return;
@@ -18,7 +20,9 @@ void Light::setup(void) {
 
 void Light::setState(int newState) {
 	state = newState;
-	digitalWrite(pin, state);
+	if(pin > 0) {
+		digitalWrite(pin, state);
+	}
 	return;
 }
 
