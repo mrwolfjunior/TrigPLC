@@ -6,6 +6,8 @@
 #include <Button.h>
 #include <ArduinoJson.h>
 
+extern String discoveryPrefix;
+
 class Trigger
 {
 	private:

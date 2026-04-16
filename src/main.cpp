@@ -16,12 +16,14 @@ void TaskTrigger(void *pvParameters);
 void TaskIOT(void *pvParameters);
 TaskHandle_t TaskIOTHandle; // handler for TaskIOT
 
+String discoveryPrefix = MQTT_DISCOVERY_PREFIX;
+
 EthernetClient ethClient;
 
 PubSubClient mqttClient(ethClient);
 long lastMQTTConnection;
-StaticJsonDocument<384> staticJsonDocument;
-char jsonBuffer[256];
+StaticJsonDocument<640> staticJsonDocument;
+char jsonBuffer[400];
 char stateOnJson[64];
 char stateOffJson[64];
 
@@ -176,18 +178,21 @@ void handleMQTTConnection()
           {
             // MQTT discovery for Home Assistant
             staticJsonDocument.clear();
-            staticJsonDocument["cmd_t"] = "~/set";
-            staticJsonDocument["stat_t"] = "~/state";
             staticJsonDocument["schema"] = "json";
+            staticJsonDocument["command_topic"] = "~/set";
+            staticJsonDocument["state_topic"] = "~/state";
             staticJsonDocument["~"] = item.getMqttPrefix();
             staticJsonDocument["name"] = item.getName();
-            staticJsonDocument["unique_id"] = item.getId();
             
-            // Device grouping
+            // Unique ID must be globally unique across HA
+            String uid = MQTT_CLIENT_ID + "_" + item.getId();
+            staticJsonDocument["unique_id"] = uid;
+            
+            // Device grouping (Full keys for better compatibility)
             JsonObject device = staticJsonDocument.createNestedObject("device");
             JsonArray identifiers = device.createNestedArray("identifiers");
             identifiers.add(MQTT_CLIENT_ID);
-            device["name"] = "Controllino PLC";
+            device["name"] = MQTT_DEVICE_NAME;
             device["model"] = "Controllino Mega";
             device["sw_version"] = "1.1.0";
 

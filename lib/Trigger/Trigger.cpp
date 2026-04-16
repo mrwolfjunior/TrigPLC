@@ -1,6 +1,6 @@
 #include <Trigger.h>
 
-static char topicBuffer[64];
+static char topicBuffer[80]; // Increased buffer for longer discovery prefixes
 
 Trigger::Trigger(Button ** buttons, uint8_t buttonCount, Light * light, String name, String id, String type) {
 	this->buttons = buttons;
@@ -72,21 +72,21 @@ String Trigger::getType(void) {
 }
 
 const char * Trigger::getMqttPrefix(void) {
-    snprintf(topicBuffer, sizeof(topicBuffer), "ha/%s/%s", type.c_str(), id.c_str());
+    snprintf(topicBuffer, sizeof(topicBuffer), "%s/%s/%s", discoveryPrefix.c_str(), type.c_str(), id.c_str());
 	return topicBuffer;
 }
 
 const char * Trigger::getMqttConfigTopic(void) {
-    snprintf(topicBuffer, sizeof(topicBuffer), "ha/%s/%s/config", type.c_str(), id.c_str());
+    snprintf(topicBuffer, sizeof(topicBuffer), "%s/%s/%s/config", discoveryPrefix.c_str(), type.c_str(), id.c_str());
 	return topicBuffer;
 }
 
 const char * Trigger::getMqttStateTopic(void) {
-    snprintf(topicBuffer, sizeof(topicBuffer), "ha/%s/%s/state", type.c_str(), id.c_str());
+    snprintf(topicBuffer, sizeof(topicBuffer), "%s/%s/%s/state", discoveryPrefix.c_str(), type.c_str(), id.c_str());
 	return topicBuffer;
 }
 
 const char * Trigger::getMqttCommandTopic(void) {
-    snprintf(topicBuffer, sizeof(topicBuffer), "ha/%s/%s/set", type.c_str(), id.c_str());
+    snprintf(topicBuffer, sizeof(topicBuffer), "%s/%s/%s/set", discoveryPrefix.c_str(), type.c_str(), id.c_str());
 	return topicBuffer;
 }

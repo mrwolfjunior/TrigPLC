@@ -11,9 +11,11 @@
 #define MQTT_USERNAME "{{ mqtt.username }}"
 #define MQTT_PASSWORD "{{ mqtt.password }}"
 #define MQTT_CLIENT_ID String("{{ mqtt.client_id }}")
+#define MQTT_DEVICE_NAME "{{ mqtt.device_name | default('Controllino PLC') }}"
+#define MQTT_DISCOVERY_PREFIX "{{ mqtt.discovery_prefix | default('homeassistant') }}"
 #define MQTT_STATE_ON_PAYLOAD "ON"
 #define MQTT_STATE_OFF_PAYLOAD "OFF"
-#define MQTT_CONTROLLINO_CONFIG_TOPIC "ha/status/{{ mqtt.client_id }}"
+#define MQTT_CONTROLLINO_CONFIG_TOPIC String(MQTT_DISCOVERY_PREFIX + String("/status/{{ mqtt.client_id }}")).c_str()
 #define MQTT_BROKER_TIMEOUT 5000
 
 // Network Configuration
