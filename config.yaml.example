@@ -1,0 +1,46 @@
+# TrigPLC Configuration Example
+# This file defines the hardware mapping and MQTT settings.
+# A Python script generates src/config.h from this file.
+
+mqtt:
+  server: "192.168.1.10"
+  port: 1883
+  username: "mqtt_user"
+  password: "mqtt_password"
+  client_id: "controllino_mega_01"
+
+network:
+  mac: [0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED]
+  ip: "192.168.1.150"
+  gateway: "192.168.1.1"
+  subnet: "255.255.255.0"
+
+# Physical Buttons
+buttons:
+  - id: btn_living_1
+    pin: CONTROLLINO_A0
+  - id: btn_living_2
+    pin: CONTROLLINO_A1
+  - id: btn_kitchen
+    pin: CONTROLLINO_A2
+
+# Physical Lights (Relays)
+lights:
+  - id: relay_living
+    pin: CONTROLLINO_R0
+  - id: relay_kitchen
+    pin: CONTROLLINO_R1
+
+# Logic Mappings (N-to-M support)
+mappings:
+  - id: light_living
+    name: "Living Room Light"
+    type: "light"
+    light: relay_living
+    buttons: [btn_living_1, btn_living_2] # TWO buttons for ONE light
+
+  - id: light_kitchen
+    name: "Kitchen Light"
+    type: "light"
+    light: relay_kitchen
+    buttons: [btn_kitchen] # ONE button for ONE light

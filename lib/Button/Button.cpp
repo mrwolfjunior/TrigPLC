@@ -3,31 +3,34 @@
 Button::Button(int pin)
 {
 	this->pin = pin;
+	this->initFlag = false;
 }
 
 void Button::setup(void)
 {
-	// init hardware
 	if (initFlag == false)
 	{
 		pinMode(pin, INPUT);
-		initFlag = true;	}
+		initFlag = true;
+	}
 
-	// init private variables
 	lastState = digitalRead(pin);
 	currentState = lastState;
-	return;
+}
+
+void Button::update(void)
+{
+	lastState = currentState;
+	currentState = digitalRead(pin);
+}
+
+boolean Button::wasPressed(void)
+{
+	return (currentState == LOW && lastState == HIGH);
 }
 
 boolean Button::isPressed(void)
 {
-	lastState = currentState;
-	currentState = digitalRead(pin);
-
-	if (currentState == LOW && lastState == HIGH)
-	{
-		return true;
-	}
-
-	return false;
+    update();
+	return wasPressed();
 }

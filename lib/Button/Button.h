@@ -23,7 +23,18 @@ class Button
                  */
                 void setup(void);
                 /**
-                 * @brief Function that check if button is pressed
+                 * @brief Read the pin and update state (call once per loop)
+                 * 
+                 */
+                void update(void);
+                /**
+                 * @brief Check if button was pressed since last update
+                 * 
+                 * @return boolean
+                 */
+                boolean wasPressed(void);
+                /**
+                 * @brief Deprecated: use update() + wasPressed()
                  * 
                  * @return boolean
                  */

@@ -17,53 +17,64 @@
 
 # Features
 
-This repo is my Controllino firmware for home automation
+This repo is my Controllino firmware for home automation.
 
-Current feature:
+Current features:
 
-- [x] Home assistant integration with auto discovery
-- [x] FreeRTOS integration
+- [x] Home Assistant integration with **Device Grouping** (ESPHome-style)
+- [x] **YAML-based configuration** with automatic C++ code generation
+- [x] **N-to-M mapping**: multiple buttons per light and vice versa
+- [x] FreeRTOS integration for real-time responsiveness
+- [x] **Watchdog Timer (WDT)** for industrial-grade reliability
 - [ ] Multiple press on single button (eg. double press --> 2 lights)
 - [ ] OTA update 
 
 # Brief introduction
 
-TrigPLC is an open source firmware for the Controllino, an industry-grade PLC Arduino compatible. The firmware should be working with an Arduino Mega 2560 and a w5100 shield for ethernet connection.
+TrigPLC is an open source firmware for the Controllino, an industry-grade PLC Arduino compatible. The firmware is optimized for ATmega2560 with Ethernet connection.
 
 Check [Controllino webpage](https://www.controllino.com/) if you are interested.
 
 # Why FreeRTOS
 
-I do like task management based on FreeRTOS, thus I have created two independent task with different priority:
+I use FreeRTOS to separate time-critical hardware logic from network communication:
 
-- Hight priority: Task that manage the basic functionality ( button pressed --> light on)
-- Low priority: Task that manage the IoT functionality
-
-For further information about freertos library please check [FreeRTOS website](https://www.freertos.org/)
+- **High priority**: `TaskTrigger` manages local logic (button -> light) with sub-15ms latency.
+- **Low priority**: `TaskIOT` manages MQTT connection, Home Assistant discovery, and state updates.
 
 # Instructions
 
-1. Clone the repo
-2. Create a new project on PlatformIO and add the repo folder
-3. Customize TrigPLC/src/config.h
-5. Build and flash the board
+1. **Clone the repo.**
+2. **Install dependencies**: Ensure you have Python with `PyYAML` and `Jinja2` installed (`pip install pyyaml jinja2`).
+3. **Configure**: Copy `config.yaml.example` to `config.yaml` and customize it.
+4. **Build**: Run `pio run`. PlatformIO will automatically generate `src/config.h` from your YAML.
+5. **Flash**: Upload to your Controllino.
 
-Please make sure to adjust properly the stack size for each task.
+# Configuration (YAML)
 
-## Control multiple lights from multiple buttons
+The system uses a `config.yaml` file to define the hardware and logic. This approach is more readable than manual C++ editing and allows for complex mappings.
 
-If you want to control multiple lights from multiple buttons simply add one Trigger for each button / light couple. 
+## N-to-M Mapping
 
-Example - two buttons control 1 light:
+You can easily map multiple buttons to a single light or use one button for multiple lights.
 
-    Trigger(&button_A4, &light_R3, "Light 1", "p1_T4"),       // Light 1 - button 1
-    Trigger(&button_A3, &light_R3, "", "p1_T4"),              // Light 1 - button 2
+Example `config.yaml` mapping:
 
-NOTE: Make sure to set a friendly name only for the first Trigger (in the above example "Light 1"), for the others button that manage the same light you must set an empty string. The unique id must be the same, because from a mqtt prospective they represent the same entity.
+```yaml
+mappings:
+  - id: living_light
+    name: "Living Room"
+    light: relay_R0
+    buttons: [btn_A0, btn_A1] # Two buttons controlling one relay
+```
+
+The code generator handles the memory-efficient C++ implementation automatically.
 
 # Notes
 
-If you intend to modify the FreeRTOS tasks make sure to adjust properly the stack size for each task.
+- **Memory**: The project is optimized for AVR (8KB RAM). Topic strings are generated on-the-fly to save heap space.
+- **Watchdog**: A hardware watchdog (8s) is active. If any task hangs, the device resets automatically.
+- **HA Device**: All entities are grouped under a single "Controllino PLC" device in Home Assistant for better organization.
 
 <p align="center">
 <div>Icons made by <a href="https://www.flaticon.com/authors/pixel-perfect" title="Pixel perfect">Pixel perfect</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>

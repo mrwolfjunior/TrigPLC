@@ -17,7 +17,6 @@ void TaskIOT(void *pvParameters);
 TaskHandle_t TaskIOTHandle; // handler for TaskIOT
 
 EthernetClient ethClient;
-long MQTT_TIMEOUT = 10000 / portTICK_PERIOD_MS;
 
 PubSubClient mqttClient(ethClient);
 long lastMQTTConnection;
@@ -85,6 +84,13 @@ void TaskTrigger(void *pvParameters __attribute__((unused)))
   for (;;)
   {
     wdt_reset();
+
+    // Scan all physical buttons once per loop
+    for (auto button : all_buttons)
+    {
+      if (button) button->update();
+    }
+
     for (auto &item : triggers)
     {
       item.loop();
@@ -158,7 +164,7 @@ void handleMQTTConnection()
 {
   if (!mqttClient.connected())
   {
-    if (MQTT_CONNECTION_TIMEOUT < xTaskGetTickCount() - lastMQTTConnection)
+    if (MQTT_BROKER_TIMEOUT < xTaskGetTickCount() - lastMQTTConnection)
     {
       if (mqttClient.connect(MQTT_CLIENT_ID.c_str(), MQTT_USERNAME, MQTT_PASSWORD, MQTT_CONTROLLINO_CONFIG_TOPIC, 0, 1, "dead"))
       {

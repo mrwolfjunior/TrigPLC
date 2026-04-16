@@ -9,7 +9,8 @@
 class Trigger
 {
 	private:
-                Button * button;
+                Button ** buttons;
+                uint8_t buttonCount;
                 Light * light;
                 bool isChangedFlag;
                 String name;
@@ -19,10 +20,15 @@ class Trigger
                 /**
                  * @brief Construct a new Trigger object
                  * 
-                 * @param button Button object
+                 * @param buttons Array of Button pointers
+                 * @param buttonCount Number of buttons in the array
                  * @param light Light object
                  * @param name Friendly name
                  * @param id unique id for MQTT
+                 */
+                Trigger(Button ** buttons, uint8_t buttonCount, Light * light, String name, String id, String type = "light");
+                /**
+                 * @brief Construct a single button Trigger (compatibility)
                  */
                 Trigger(Button * button, Light * light, String name, String id, String type = "light");
                 /**
