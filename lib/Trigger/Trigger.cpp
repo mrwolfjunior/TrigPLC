@@ -13,13 +13,14 @@ Trigger::Trigger(Button ** buttons, uint8_t buttonCount, Light * light, String n
 }
 
 Trigger::Trigger(Button * button, Light * light, String name, String id, String type) {
-    // For single button triggers, we create a small array or just handle it.
-    // To save RAM, we reuse the pointer logic. 
-    // WARNING: This assumes the button pointer passed is stored in a way that allows address-of.
-    // Better: create a static array of size 1 for these cases in the generator.
-    this->buttons = new Button*[1];
-    this->buttons[0] = button;
-    this->buttonCount = 1;
+    if (button == NULL) {
+        this->buttons = NULL;
+        this->buttonCount = 0;
+    } else {
+        this->buttons = new Button*[1];
+        this->buttons[0] = button;
+        this->buttonCount = 1;
+    }
 	this->light = light;
 	this->name = name;
 	this->id = id;
@@ -29,14 +30,14 @@ Trigger::Trigger(Button * button, Light * light, String name, String id, String 
 
 void Trigger::setup(void) {
 	for(uint8_t i=0; i<buttonCount; i++) {
-        if(buttons[i]) buttons[i]->setup();
+        if(buttons && buttons[i]) buttons[i]->setup();
     }
 	light->setup();
 }
 
 void Trigger::loop(void) {
 	for(uint8_t i=0; i<buttonCount; i++) {
-        if(buttons[i] && buttons[i]->wasPressed()) {
+        if(buttons && buttons[i] && buttons[i]->wasPressed()) {
             light->triggerLight();
             isChangedFlag = true;
             break; // One button press is enough

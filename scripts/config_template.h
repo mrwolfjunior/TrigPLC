@@ -45,8 +45,10 @@ Trigger triggers[] = {
     {%- for mapping in mappings %}
     {%- if mapping.buttons|length > 1 %}
     Trigger(buttons_{{ mapping.id }}, {{ mapping.buttons|length }}, &{{ mapping.light }}, "{{ mapping.name }}", "{{ mapping.id }}", "{{ mapping.type | default('light') }}")
-    {%- else %}
+    {%- elif mapping.buttons|length == 1 %}
     Trigger(&{{ mapping.buttons[0] }}, &{{ mapping.light }}, "{{ mapping.name }}", "{{ mapping.id }}", "{{ mapping.type | default('light') }}")
+    {%- else %}
+    Trigger((Button*)NULL, &{{ mapping.light }}, "{{ mapping.name }}", "{{ mapping.id }}", "{{ mapping.type | default('light') }}")
     {%- endif %}{{ "," if not loop.last }}
     {%- endfor %}
 };

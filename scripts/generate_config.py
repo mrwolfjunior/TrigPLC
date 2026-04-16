@@ -3,6 +3,13 @@ import jinja2
 import os
 import sys
 
+# PlatformIO integration
+try:
+    Import("env")
+    PIO_MODE = True
+except:
+    PIO_MODE = False
+
 def generate_config(yaml_file, template_file, output_file):
     if not os.path.exists(yaml_file):
         print(f"Error: {yaml_file} not found.")
@@ -22,13 +29,15 @@ def generate_config(yaml_file, template_file, output_file):
     
     print(f"Successfully generated {output_file}")
 
-if __name__ == "__main__":
-    # Default paths relative to project root
-    yaml_path = "config.yaml"
-    template_path = "scripts/config_template.h"
-    output_path = "src/config.h"
+# Paths relative to project root
+yaml_path = "config.yaml"
+template_path = "scripts/config_template.h"
+output_path = "src/config.h"
 
+if PI_MODE := PIO_MODE:
+    print("Generating config from PlatformIO...")
+    generate_config(yaml_path, template_path, output_path)
+elif __name__ == "__main__":
     if len(sys.argv) > 1:
         yaml_path = sys.argv[1]
-    
     generate_config(yaml_path, template_path, output_path)
