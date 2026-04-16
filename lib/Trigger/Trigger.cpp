@@ -1,5 +1,7 @@
 #include <Trigger.h>
 
+static char topicBuffer[64];
+
 Trigger::Trigger(Button * button, Light * light, String name, String id, String type) {
 	this->button = button;
 	this->light = light;
@@ -7,7 +9,6 @@ Trigger::Trigger(Button * button, Light * light, String name, String id, String 
 	this->id = id;
 	this->type = type;
 	isChangedFlag = false;
-	MQTT_PREFIX = "ha/" + type + "/" + id;
 	return;
 }
 
@@ -26,14 +27,6 @@ void Trigger::loop(void) {
 			isChangedFlag = true;
 		}
 	}
-	return;
-}
-
-void Trigger::setup_mqtt(void) {
-	MQTT_CONFIG_TOPIC = MQTT_PREFIX + "/config";
-	MQTT_STATE_TOPIC = MQTT_PREFIX + "/state";
-	MQTT_COMMAND_TOPIC = MQTT_PREFIX + "/set";
-	MQTT_STATUS_TOPIC = MQTT_PREFIX + "/status";
 	return;
 }
 
@@ -60,18 +53,26 @@ String Trigger::getId(void) {
 	return id;
 }
 
+String Trigger::getType(void) {
+    return type;
+}
+
 const char * Trigger::getMqttPrefix(void) {
-	return MQTT_PREFIX.c_str();
+    snprintf(topicBuffer, sizeof(topicBuffer), "ha/%s/%s", type.c_str(), id.c_str());
+	return topicBuffer;
 }
 
 const char * Trigger::getMqttConfigTopic(void) {
-	return MQTT_CONFIG_TOPIC.c_str();
+    snprintf(topicBuffer, sizeof(topicBuffer), "ha/%s/%s/config", type.c_str(), id.c_str());
+	return topicBuffer;
 }
 
 const char * Trigger::getMqttStateTopic(void) {
-	return MQTT_STATE_TOPIC.c_str();
+    snprintf(topicBuffer, sizeof(topicBuffer), "ha/%s/%s/state", type.c_str(), id.c_str());
+	return topicBuffer;
 }
 
 const char * Trigger::getMqttCommandTopic(void) {
-	return MQTT_COMMAND_TOPIC.c_str();
+    snprintf(topicBuffer, sizeof(topicBuffer), "ha/%s/%s/set", type.c_str(), id.c_str());
+	return topicBuffer;
 }

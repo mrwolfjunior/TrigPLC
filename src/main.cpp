@@ -4,7 +4,8 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include <config.h>
-#include <semphr.h> // add the FreeRTOS functions for Semaphores (or Flags).
+#include <semphr.h>
+#include <avr/wdt.h>
 
 // Declare a mutex Semaphore Handle which we will use to manage the Serial Port.
 // It will be used to ensure only only one Task is accessing this resource at any time.
@@ -20,52 +21,51 @@ long MQTT_TIMEOUT = 10000 / portTICK_PERIOD_MS;
 
 PubSubClient mqttClient(ethClient);
 long lastMQTTConnection;
-StaticJsonDocument<256> staticJsonDocument;
+StaticJsonDocument<384> staticJsonDocument;
 char jsonBuffer[256];
-char stateOnJson[128];
-char stateOffJson[128];
+char stateOnJson[64];
+char stateOffJson[64];
 
 void handleMQTTConnection();
-void publishToMQTT(const char *p_topic, char *p_payload);
+void publishToMQTT(const char *p_topic, char *p_payload, bool retain = false);
 void subscribeToMQTT(const char *p_topic);
 void handleMQTTMessage(char *p_topic, byte *p_payload, unsigned int p_length);
 
 void setup()
 {
+  // Enable Watchdog Timer
+  wdt_enable(WDTO_8S);
 
   // initialize serial communication at 9600 bits per second:
   Serial.begin(9600);
 
   while (!Serial)
   {
-    ; // wait for serial port to connect. Needed for native USB, on LEONARDO, MICRO, YUN, and other 32u4 based boards.
+    ; // wait for serial port to connect.
   }
 
-  // Semaphores are useful to stop a Task proceeding, where it should be paused to wait,
-  // because it is sharing a resource, such as the Serial port.
-  // Semaphores should only be used whilst the scheduler is running, but we can set it up here.
-  if (xSerialSemaphore == NULL) // Check to confirm that the Serial Semaphore has not already been created.
+  if (xSerialSemaphore == NULL) 
   {
-    xSerialSemaphore = xSemaphoreCreateMutex(); // Create a mutex semaphore we will use to manage the Serial Port
+    xSerialSemaphore = xSemaphoreCreateMutex(); 
     if ((xSerialSemaphore) != NULL)
-      xSemaphoreGive((xSerialSemaphore)); // Make the Serial Port available for use, by "Giving" the Semaphore.
+      xSemaphoreGive((xSerialSemaphore)); 
   }
 
   xTaskCreate(
-      TaskTrigger, "Trigger" // A name just for humans
+      TaskTrigger, "Trigger"
       ,
-      128 // This stack size can be checked & adjusted by reading the Stack Highwater
+      128 
       ,
-      NULL, 3 // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+      NULL, 3 
       ,
       NULL);
 
   xTaskCreate(
-      TaskIOT, "IOT" // A name just for humans
+      TaskIOT, "IOT"
       ,
-      512 // This stack size can be checked & adjusted by reading the Stack Highwater
+      512 
       ,
-      NULL, 1 // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+      NULL, 1 
       ,
       &TaskIOTHandle);
 }
@@ -84,6 +84,7 @@ void TaskTrigger(void *pvParameters __attribute__((unused)))
 
   for (;;)
   {
+    wdt_reset();
     for (auto &item : triggers)
     {
       item.loop();
@@ -106,27 +107,24 @@ void TaskIOT(void *pvParameters __attribute__((unused)))
 
   while (Ethernet.linkStatus() == LinkOFF)
   {
+    wdt_reset();
 #ifdef DEBUG
-    if (xSemaphoreTake(xSerialSemaphore, (TickType_t)5) == pdTRUE)
+    if (xSemaphoreTake(xSerialSemaphore, (TickType_t)100) == pdTRUE)
     {
-      Serial.println("ERROR: No ethernet cable connected, wait");
+      Serial.println(F("ERROR: No ethernet cable connected, wait"));
       xSemaphoreGive(xSerialSemaphore);
     }
 #endif
 
-    vTaskDelay(60000 / portTICK_PERIOD_MS); // Ethernet cable is not connected. Wait until cable is connected
+    vTaskDelay(60000 / portTICK_PERIOD_MS); 
   }
 
   staticJsonDocument.clear();
   staticJsonDocument["state"] = MQTT_STATE_ON_PAYLOAD;
   serializeJson(staticJsonDocument, stateOnJson);
+  staticJsonDocument.clear();
   staticJsonDocument["state"] = MQTT_STATE_OFF_PAYLOAD;
   serializeJson(staticJsonDocument, stateOffJson);
-
-  for (auto &item : triggers)
-  {
-    item.setup_mqtt();
-  }
 
   mqttClient.setServer(MQTT_SERVER, MQTT_SERVER_PORT);
   mqttClient.setCallback(handleMQTTMessage);
@@ -137,29 +135,13 @@ void TaskIOT(void *pvParameters __attribute__((unused)))
 
   for (;;)
   {
+    wdt_reset();
 #ifdef DEBUG
-    if (xSemaphoreTake(xSerialSemaphore, (TickType_t)5) == pdTRUE)
+    if (xSemaphoreTake(xSerialSemaphore, (TickType_t)100) == pdTRUE)
     {
-      Serial.println("INFO: Current client state: ");
-      Serial.println(mqttClient.state());
-      Serial.println(xTaskGetTickCount());
-      /*
-      // Possible values for client.state()
-      #define MQTT_CONNECTION_TIMEOUT     -4
-      #define MQTT_CONNECTION_LOST        -3
-      #define MQTT_CONNECT_FAILED         -2
-      #define MQTT_DISCONNECTED           -1
-      #define MQTT_CONNECTED               0
-      #define MQTT_CONNECT_BAD_PROTOCOL    1
-      #define MQTT_CONNECT_BAD_CLIENT_ID   2
-      #define MQTT_CONNECT_UNAVAILABLE     3
-      #define MQTT_CONNECT_BAD_CREDENTIALS 4
-      #define MQTT_CONNECT_UNAUTHORIZED    5
-      */
-
-      /*
-     Return the highwatermart --> on a 8 bit architecture 1 indicate that 1 byte is used
-     */
+      Serial.print(F("INFO: MQTT State: "));
+      Serial.print(mqttClient.state());
+      Serial.print(F(" | Stack: "));
       Serial.println(uxTaskGetStackHighWaterMark(NULL));
       xSemaphoreGive(xSerialSemaphore);
     }
@@ -168,6 +150,7 @@ void TaskIOT(void *pvParameters __attribute__((unused)))
     handleMQTTConnection();
 
     mqttClient.loop();
+    vTaskDelay(1);
   }
 }
 
@@ -179,14 +162,12 @@ void handleMQTTConnection()
     {
       if (mqttClient.connect(MQTT_CLIENT_ID.c_str(), MQTT_USERNAME, MQTT_PASSWORD, MQTT_CONTROLLINO_CONFIG_TOPIC, 0, 1, "dead"))
       {
-
-        mqttClient.publish(MQTT_CONTROLLINO_CONFIG_TOPIC, "alive", true);
+        publishToMQTT(MQTT_CONTROLLINO_CONFIG_TOPIC, (char*)"alive", true);
 
         for (auto &item : triggers)
         {
           if (item.getName().length() != 0)
           {
-
             // MQTT discovery for Home Assistant
             staticJsonDocument.clear();
             staticJsonDocument["cmd_t"] = "~/set";
@@ -195,8 +176,17 @@ void handleMQTTConnection()
             staticJsonDocument["~"] = item.getMqttPrefix();
             staticJsonDocument["name"] = item.getName();
             staticJsonDocument["unique_id"] = item.getId();
+            
+            // Device grouping
+            JsonObject device = staticJsonDocument.createNestedObject("device");
+            JsonArray identifiers = device.createNestedArray("identifiers");
+            identifiers.add(MQTT_CLIENT_ID);
+            device["name"] = "Controllino PLC";
+            device["model"] = "Controllino Mega";
+            device["sw_version"] = "1.1.0";
+
             serializeJson(staticJsonDocument, jsonBuffer);
-            publishToMQTT(item.getMqttConfigTopic(), jsonBuffer);
+            publishToMQTT(item.getMqttConfigTopic(), jsonBuffer, true);
             subscribeToMQTT(item.getMqttCommandTopic());
           }
         }
@@ -206,9 +196,9 @@ void handleMQTTConnection()
       else
       {
 #ifdef DEBUG
-        if (xSemaphoreTake(xSerialSemaphore, (TickType_t)5) == pdTRUE)
+        if (xSemaphoreTake(xSerialSemaphore, (TickType_t)100) == pdTRUE)
         {
-          Serial.println("ERROR: The connection to the MQTT broker failed");
+          Serial.println(F("ERROR: MQTT connection failed"));
           xSemaphoreGive(xSerialSemaphore);
         }
 #endif
@@ -237,16 +227,15 @@ void handleMQTTConnection()
   }
 }
 
-void publishToMQTT(const char *p_topic, char *p_payload)
+void publishToMQTT(const char *p_topic, char *p_payload, bool retain)
 {
-  if (mqttClient.publish(p_topic, p_payload, true))
+  if (mqttClient.publish(p_topic, p_payload, retain))
   {
 #ifdef DEBUG
-    if (xSemaphoreTake(xSerialSemaphore, (TickType_t)5) == pdTRUE)
+    if (xSemaphoreTake(xSerialSemaphore, (TickType_t)100) == pdTRUE)
     {
-      Serial.println("INFO: MQTT message published successfully, topic & payload: ");
+      Serial.print(F("INFO: Published "));
       Serial.println(p_topic);
-      Serial.println(p_payload);
       xSemaphoreGive(xSerialSemaphore);
     }
 #endif
@@ -254,17 +243,14 @@ void publishToMQTT(const char *p_topic, char *p_payload)
   else
   {
 #ifdef DEBUG
-    if (xSemaphoreTake(xSerialSemaphore, (TickType_t)5) == pdTRUE)
+    if (xSemaphoreTake(xSerialSemaphore, (TickType_t)100) == pdTRUE)
     {
-      Serial.println("ERROR: MQTT message not published, either connection lost, or message too large. Topic & payload: ");
+      Serial.print(F("ERROR: Publish failed "));
       Serial.println(p_topic);
-      Serial.println(p_payload);
       xSemaphoreGive(xSerialSemaphore);
     }
 #endif
   }
-
-  return;
 }
 
 void subscribeToMQTT(const char *p_topic)
@@ -272,9 +258,9 @@ void subscribeToMQTT(const char *p_topic)
   if (mqttClient.subscribe(p_topic))
   {
 #ifdef DEBUG
-    if (xSemaphoreTake(xSerialSemaphore, (TickType_t)5) == pdTRUE)
+    if (xSemaphoreTake(xSerialSemaphore, (TickType_t)100) == pdTRUE)
     {
-      Serial.println("INFO: Sending the MQTT subscribe succeeded for topic: ");
+      Serial.print(F("INFO: Subscribed "));
       Serial.println(p_topic);
       xSemaphoreGive(xSerialSemaphore);
     }
@@ -283,9 +269,9 @@ void subscribeToMQTT(const char *p_topic)
   else
   {
 #ifdef DEBUG
-    if (xSemaphoreTake(xSerialSemaphore, (TickType_t)5) == pdTRUE)
+    if (xSemaphoreTake(xSerialSemaphore, (TickType_t)100) == pdTRUE)
     {
-      Serial.println("ERROR: Sending the MQTT subscribe failed for topic: ");
+      Serial.print(F("ERROR: Subscribing failed "));
       Serial.println(p_topic);
       xSemaphoreGive(xSerialSemaphore);
     }
@@ -295,42 +281,28 @@ void subscribeToMQTT(const char *p_topic)
 
 void handleMQTTMessage(char *p_topic, byte *p_payload, unsigned int p_length)
 {
-  // light_R1
-
-  // concatenates the payload into a string
-  String payload;
-  for (uint8_t i = 0; i < p_length; i++)
-  {
-    payload.concat((char)p_payload[i]);
-  }
-
 #ifdef DEBUG
-  if (xSemaphoreTake(xSerialSemaphore, (TickType_t)5) == pdTRUE)
+  if (xSemaphoreTake(xSerialSemaphore, (TickType_t)100) == pdTRUE)
   {
-    Serial.println("INFO: New MQTT message received, topic:");
+    Serial.print(F("INFO: MQTT Message on "));
     Serial.println(p_topic);
-    Serial.println("INFO: MQTT payload:");
-    Serial.println(payload);
-
     xSemaphoreGive(xSerialSemaphore);
   }
 #endif
 
   for (auto &item : triggers)
   {
-    if (String(item.getMqttCommandTopic()).equals(p_topic))
+    if (strcmp(item.getMqttCommandTopic(), p_topic) == 0)
     {
       staticJsonDocument.clear();
-      auto error = deserializeJson(staticJsonDocument, p_payload);
+      auto error = deserializeJson(staticJsonDocument, p_payload, p_length);
       if (error)
       {
-
 #ifdef DEBUG
-        if (xSemaphoreTake(xSerialSemaphore, (TickType_t)5) == pdTRUE)
+        if (xSemaphoreTake(xSerialSemaphore, (TickType_t)100) == pdTRUE)
         {
-          Serial.println("deserializeJson() failed with code: ");
+          Serial.print(F("ERROR: JSON parse failed: "));
           Serial.println(error.c_str());
-
           xSemaphoreGive(xSerialSemaphore);
         }
 #endif
@@ -348,13 +320,9 @@ void handleMQTTMessage(char *p_topic, byte *p_payload, unsigned int p_length)
           item.setState(LOW);
         }
         serializeJson(staticJsonDocument, jsonBuffer);
-
         publishToMQTT(item.getMqttStateTopic(), jsonBuffer);
       }
-
       break;
     }
   }
-
-  return;
 }

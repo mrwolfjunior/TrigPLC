@@ -15,11 +15,6 @@ class Trigger
                 String name;
                 String id;
                 String type;
-                String MQTT_PREFIX;
-                String MQTT_CONFIG_TOPIC;
-                String MQTT_STATE_TOPIC;
-                String MQTT_COMMAND_TOPIC;
-                String MQTT_STATUS_TOPIC;
         public:
                 /**
                  * @brief Construct a new Trigger object
@@ -29,17 +24,12 @@ class Trigger
                  * @param name Friendly name
                  * @param id unique id for MQTT
                  */
-                Trigger(Button * button, Light * light, String name, String id, String type);
+                Trigger(Button * button, Light * light, String name, String id, String type = "light");
                 /**
                  * @brief Function to be called in the setup function
                  * 
                  */
                 void setup(void);
-                /**
-                 * @brief Function to be called to initialize the mqtt variable
-                 * 
-                 */
-                void setup_mqtt(void);
                 /**
                  * @brief Function to be called in the loop function
                  * 
@@ -75,6 +65,12 @@ class Trigger
                  * @return String 
                  */
                 String getId(void);
+                /**
+                 * @brief Get the type (light, sensor, etc)
+                 * 
+                 * @return String 
+                 */
+                String getType(void);
                 /**
                  * @brief Get the Mqtt Prefix
                  * 
